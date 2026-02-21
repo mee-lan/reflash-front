@@ -131,6 +131,9 @@ export default function Login() {
                 <input
                   id="email"
                   name="email"
+
+                  // Changed the type from email to text for now as test db expect username not email 
+                  // Will fix it later
                   type='text'
                   value={formData.email}
                   onChange={handleChange}

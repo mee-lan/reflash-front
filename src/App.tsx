@@ -27,4 +27,7 @@ function AppRoutes(){
   )
 }
 
+        // <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+
+
 export default App
