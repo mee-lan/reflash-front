@@ -72,7 +72,9 @@ export default function Login() {
       }))
 
       if (login.fulfilled.match(resultAction)) {
-        navigate('/')
+
+        // On successful login, navigate to dashboard
+        navigate('/dashboard')
         console.log("Login successful!")
       } else {
         setErrors(prev => ({

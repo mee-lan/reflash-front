@@ -3,6 +3,8 @@ import Login from "./pages/auth/Login"
 import Register from "./pages/auth/Register"
 import { Provider } from "react-redux"
 import { store } from "./store/store"
+import { ProtectedRoute } from "./components"
+import Dashboard from "./pages/student/Dashboard"
 
 function App() {
 
@@ -20,6 +22,8 @@ function AppRoutes(){
         <Route path="/" element={<Navigate to="/login" replace/>}></Route>
         <Route path="/login" element={<Login/>}></Route>
         <Route path="/register" element={<Register/>}></Route>
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+
         
         /* More routes as needed */
       </Routes>
@@ -27,7 +31,6 @@ function AppRoutes(){
   )
 }
 
-        // <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
 
 export default App
