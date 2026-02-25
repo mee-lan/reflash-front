@@ -1,3 +1,4 @@
 import ProtectedRoute from "./ProtectedRoute";
 import ClassCard from "./ClassCard";
-export { ProtectedRoute, ClassCard }
+import DeckCard from "./DeckCard";
+export { ProtectedRoute, ClassCard, DeckCard }
