@@ -5,6 +5,7 @@ import { Provider } from "react-redux"
 import { store } from "./store/store"
 import { ProtectedRoute } from "./components"
 import { Dashboard, ClassView } from "./pages/student"
+import DeckStudy from "./pages/student/DeckStudy"
 
 
 function App() {
@@ -25,7 +26,7 @@ function AppRoutes() {
         <Route path="/register" element={<Register />}></Route>
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/class/:classId" element={<ProtectedRoute><ClassView /></ProtectedRoute>} />
-
+        <Route path="/study/:deckId" element={<ProtectedRoute><DeckStudy /></ProtectedRoute>} />
 
         /* More routes as needed */
       </Routes>
