@@ -78,61 +78,57 @@ export default function ClassView() {
 
     if (!classData) {
         return (
-            <div className="min-h-screen bg-neutral-50 center">
-                <div className="text-center">
-                    <h2>Class not found</h2>
-                    <Link to="/dashboard" className="link">Back to dashboard</Link>
-                </div>
+            <div className="text-center">
+                <h2>Class not found</h2>
+                <Link to="/dashboard" className="link">Back to dashboard</Link>
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-neutral-50">
-            <div className="container-custom py-8">
-                {/* Breadcrumb */}
-                <nav className="flex items-center gap-2 text-sm text-neutral-600 mb-6">
-                    <Link to="/dashboard" className="hover:text-primary-600">
-                        My Classes
-                    </Link>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                    <span className="text-neutral-900 font-medium">{classData.name}</span>
-                </nav>
+        <div className="container-custom py-8">
+            {/* Breadcrumb */}
+            <nav className="flex items-center gap-2 text-sm text-neutral-600 mb-6">
+                <Link to="/dashboard" className="hover:text-primary-600">
+                    My Classes
+                </Link>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                <span className="text-neutral-900 font-medium">{classData.name}</span>
+            </nav>
 
-                {/* Class Header */}
-                <div className="mb-8">
-                    <div className="flex items-center gap-3 mb-2">
-                        <h1>{classData.name}</h1>
-                        <span className="badge badge-primary">{classData.subject}</span>
+            {/* Class Header */}
+            <div className="mb-8">
+                <div className="flex items-center gap-3 mb-2">
+                    <h1>{classData.name}</h1>
+                    <span className="badge badge-primary">{classData.subject}</span>
+                </div>
+                {classData.description && (
+                    <p className="text-neutral-600 mb-3">{classData.description}</p>
+                )}
+                <p className="text-sm text-neutral-600">
+                    Teacher: <span className="font-medium">{classData.teacher.name}</span>
+                </p>
+            </div>
+
+            {/* Decks Section */}
+            <div>
+                <h2 className="mb-6">Study Decks</h2>
+
+                {decks.length === 0 ? (
+                    <div className="card">
+                        <div className="card-body text-center py-12">
+                            <p className="text-neutral-600">No decks available yet</p>
+                        </div>
                     </div>
-                    {classData.description && (
-                        <p className="text-neutral-600 mb-3">{classData.description}</p>
-                    )}
-                    <p className="text-sm text-neutral-600">
-                        Teacher: <span className="font-medium">{classData.teacher.name}</span>
-                    </p>
-                </div>
-
-                {/* Decks Section */}
-                <div>
-                    <h2 className="mb-6">Study Decks</h2>
-
-                    {decks.length === 0 ? (
-                        <div className="card">
-                            <div className="card-body text-center py-12">
-                                <p className="text-neutral-600">No decks available yet</p>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {decks.map(deck => (
-                                <DeckCard key={deck.id} deck={deck} />
-                            ))}
-                        </div>
-                    )}
-                </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {decks.map(deck => (
+                            <DeckCard key={deck.id} deck={deck} />
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     )
