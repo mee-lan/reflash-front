@@ -6,7 +6,7 @@ import { store } from "./store/store"
 import { ProtectedRoute, Layout } from "./components"
 import { Dashboard, ClassView } from "./pages/student"
 import DeckStudy from "./pages/student/DeckStudy"
-
+import TeacherDashboard from "./pages/teacher"
 
 
 
@@ -33,6 +33,17 @@ function AppRoutes() {
             </Layout>
           </ProtectedRoute>
         } />
+
+        <Route
+          path="/teacher/dashboard"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <TeacherDashboard />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
         <Route path="/class/:classId" element={
           <ProtectedRoute>
             <Layout>
