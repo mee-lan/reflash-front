@@ -1,0 +1,118 @@
+{
+  "classes": [
+    {
+      "id": 1,
+      "name": "Biology 101",
+      "subject": "Science",
+      "description": "Introduction to cellular biology and genetics",
+      "color": "green",
+      "classCode": "BIO101",
+      "teacher": {
+        "id": 1,
+        "name": "Dr. Sarah Johnson"
+      },
+      "studentCount": 24,
+      "deckCount": 5,
+      "createdAt": "2024-01-15"
+    },
+    {
+      "id": 2,
+      "name": "Algebra II",
+      "subject": "Mathematics",
+      "description": "Advanced algebra concepts",
+      "color": "blue",
+      "classCode": "MATH202",
+      "teacher": {
+        "id": 2,
+        "name": "Mr. David Chen"
+      },
+      "studentCount": 28,
+      "deckCount": 8,
+      "createdAt": "2024-01-10"
+    },
+    {
+      "id": 3,
+      "name": "English Literature",
+      "subject": "English",
+      "description": "Classic and contemporary literature",
+      "color": "purple",
+      "classCode": "ENG301",
+      "teacher": {
+        "id": 3,
+        "name": "Ms. Emma Wilson"
+      },
+      "studentCount": 22,
+      "deckCount": 6,
+      "createdAt": "2024-01-20"
+    }
+  ],
+  "decks": [
+    {
+      "id": 1,
+      "title": "Chapter 1: Cell Structure",
+      "description": "Learn about cell organelles and functions",
+      "classId": 1,
+      "className": "Biology 101",
+      "cardCount": 25,
+      "studiedCount": 18,
+      "dueCount": 5,
+      "createdAt": "2024-01-16"
+    },
+    {
+      "id": 2,
+      "title": "Chapter 2: DNA & Genetics",
+      "description": "DNA structure and genetic inheritance",
+      "classId": 1,
+      "className": "Biology 101",
+      "cardCount": 30,
+      "studiedCount": 10,
+      "dueCount": 12,
+      "createdAt": "2024-01-18"
+    },
+    {
+      "id": 3,
+      "title": "Chapter 3: Cellular Respiration",
+      "description": "How cells generate energy",
+      "classId": 1,
+      "className": "Biology 101",
+      "cardCount": 20,
+      "studiedCount": 0,
+      "dueCount": 0,
+      "createdAt": "2024-01-20"
+    }
+  ],
+  "cards": [
+    {
+      "id": 1,
+      "deckId": 1,
+      "front": "What is the function of the mitochondria?",
+      "back": "The mitochondria is the powerhouse of the cell, responsible for producing ATP through cellular respiration.",
+      "note": "Remember: Mighty mitochondria makes ATP!",
+      "difficulty": "MEDIUM",
+      "nextReviewDate": "2024-02-20",
+      "repetitions": 0,
+      "easeFactor": 2.5
+    },
+    {
+      "id": 2,
+      "deckId": 1,
+      "front": "What is the cell membrane composed of?",
+      "back": "The cell membrane is composed of a phospholipid bilayer with embedded proteins.",
+      "difficulty": "EASY",
+      "nextReviewDate": "2024-02-20",
+      "repetitions": 0,
+      "easeFactor": 2.5
+    },
+    {
+      "id": 3,
+      "deckId": 1,
+      "front": "What is the function of ribosomes?",
+      "back": "Ribosomes are responsible for protein synthesis by translating mRNA into amino acid chains.",
+      "note": "Can be free-floating or attached to the ER",
+      "difficulty": "MEDIUM",
+      "nextReviewDate": "2024-02-20",
+      "repetitions": 0,
+      "easeFactor": 2.5
+    }
+  ]
+}
