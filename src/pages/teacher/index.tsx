@@ -1,3 +1,4 @@
 import TeacherDashboard from "./TeacherDashboard";
+import TeacherClassView from "./TeacherClassView";  
 
-export default TeacherDashboard;
+export {TeacherDashboard, TeacherClassView};

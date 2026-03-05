@@ -5,4 +5,5 @@ import FlashCard from "./FlashCard";
 import Sidebar from "./Sidebar";
 import Header from "./Header"
 import Layout from "./Layout"
-export { ProtectedRoute, ClassCard, DeckCard, FlashCard, Sidebar, Header, Layout }
+import TeacherDeckCard from "./TeacherDeckCard";
+export { ProtectedRoute, ClassCard, DeckCard, FlashCard, Sidebar, Header, Layout, TeacherDeckCard }
