@@ -2,6 +2,7 @@ import { useParams, Link } from "react-router-dom"
 import { useEffect, useState } from "react"
 import type { Class, Deck } from "../../types"
 import { DeckCard } from "../../components"
+import { classAPI, deckAPI } from "../../services/api"
 
 
 export default function ClassView() {
@@ -12,59 +13,26 @@ export default function ClassView() {
 
 
     useEffect(() => {
-        // Mock data
-        // TODO: Replace with API call
-        setTimeout(() => {
-            setClassData({
-                id: Number(classId),
-                name: 'Biology 101',
-                subject: 'Science',
-                description: 'Introduction to cellular biology and genetics',
-                color: 'green',
-                classCode: 'BIO101',
-                teacher: { id: 1, name: 'Dr. Sarah Johnson' },
-                studentCount: 24,
-                deckCount: 5,
-                createdAt: '2024-01-15'
-            })
+        
+        const fetchData = async () => {
+            try {
+                setLoading(true)
 
-            setDecks([
-                {
-                    id: 1,
-                    title: 'Chapter 1: Cell Structure',
-                    description: 'Learn about cell organelles and functions',
-                    classId: Number(classId),
-                    className: 'Biology 101',
-                    cardCount: 25,
-                    studiedCount: 18,
-                    dueCount: 5,
-                    createdAt: '2024-01-16'
-                },
-                {
-                    id: 2,
-                    title: 'Chapter 2: DNA & Genetics',
-                    description: 'DNA structure and genetic inheritance',
-                    classId: Number(classId),
-                    className: 'Biology 101',
-                    cardCount: 30,
-                    studiedCount: 10,
-                    dueCount: 12,
-                    createdAt: '2024-01-18'
-                },
-                {
-                    id: 3,
-                    title: 'Chapter 3: Cellular Respiration',
-                    description: 'How cells generate energy',
-                    classId: Number(classId),
-                    className: 'Biology 101',
-                    cardCount: 20,
-                    studiedCount: 0,
-                    dueCount: 0,
-                    createdAt: '2024-01-20'
-                }
-            ])
-            setLoading(false)
-        }, 500)
+                const [classData, decks] = await Promise.all(
+                    [classAPI.getClass(Number(classId)),
+                    deckAPI.getClassDecks(Number(classId))
+                    ]
+                )
+                setClassData(classData)
+                setDecks(decks)
+            } catch (error) {
+                console.error("Failed to fetch data", error)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchData()
     }, [classId])
 
 

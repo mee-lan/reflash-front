@@ -3,6 +3,7 @@ import type { Deck, FlashCard as FlashCardType } from "../../types";
 import { useNavigate, useParams, Link } from "react-router-dom";
 
 import { FlashCard } from "../../components";
+import { deckAPI, flashcardAPI } from "../../services/api";
 
 export default function DeckStudy() {
     const [deck, setDeck] = useState<Deck | null>(null)
@@ -15,67 +16,43 @@ export default function DeckStudy() {
 
 
     useEffect(() => {
-        setTimeout(() => {
-            setDeck({
-                id: Number(deckId),
-                title: 'Chapter 1: Cell Structure',
-                description: 'Learn about cell organelles and functions',
-                classId: 1,
-                className: 'Biology 101',
-                cardCount: 5,
-                studiedCount: 0,
-                dueCount: 5,
-                createdAt: '2024-01-16'
-            })
+        const fetchData = async () => {
+            try {
+                setLoading(true)
 
+                const [deck, cards] = await Promise.all([
+                    deckAPI.getDeck(Number(deckId)),
+                    flashcardAPI.getDeckCards(Number(deckId))
+                ])
 
-            setCards([
-                {
-                    id: 1,
-                    deckId: Number(deckId),
-                    front: 'What is the function of the mitochondria?',
-                    back: 'The mitochondria is the powerhouse of the cell, responsible for producing ATP through cellular respiration.',
-                    note: 'Remember: "Mighty mitochondria makes ATP!"',
-                    difficulty: 'MEDIUM',
-                    nextReviewDate: '2024-02-20',
-                    repetitions: 0,
-                    easeFactor: 2.5
-                },
-                {
-                    id: 2,
-                    deckId: Number(deckId),
-                    front: 'What is the cell membrane composed of?',
-                    back: 'The cell membrane is composed of a phospholipid bilayer with embedded proteins.',
-                    difficulty: 'EASY',
-                    nextReviewDate: '2024-02-20',
-                    repetitions: 0,
-                    easeFactor: 2.5
-                },
-                {
-                    id: 3,
-                    deckId: Number(deckId),
-                    front: 'What is the function of ribosomes?',
-                    back: 'Ribosomes are responsible for protein synthesis by translating mRNA into amino acid chains.',
-                    note: 'Can be free-floating or attached to the ER',
-                    difficulty: 'MEDIUM',
-                    nextReviewDate: '2024-02-20',
-                    repetitions: 0,
-                    easeFactor: 2.5
-                }
-            ])
+                setDeck(deck)
+                setCards(cards)
+            }
+            catch (error) {
+                console.error("Failed to fetch deck data", error)
+            }
+            finally {
+                setLoading(false)
+            }
+        }
 
-            setLoading(false)
-        }, 500)
+        fetchData()
     }, [deckId])
 
-    const handleRating = (difficulty: 'EASY' | 'MEDIUM' | 'HARD') => {
-        console.log(`Card ${cards[currentIndex].id} rated as ${difficulty}`)
+    const handleRating = async (difficulty: 'EASY' | 'MEDIUM' | 'HARD') => {
 
-        // Move to next card or complete
-        if (currentIndex < cards.length - 1) {
-            setCurrentIndex(currentIndex + 1)
-        } else {
-            setStudyComplete(true)
+        try {
+            await flashcardAPI.rateCard(cards[currentIndex].id, difficulty)
+            console.log(`Card ${cards[currentIndex].id} rated as ${difficulty}`)
+
+            // Move to next card or complete
+            if (currentIndex < cards.length - 1) {
+                setCurrentIndex(currentIndex + 1)
+            } else {
+                setStudyComplete(true)
+            }
+        } catch (error) {
+            console.error('Failed to rate card:', error)
         }
     }
 

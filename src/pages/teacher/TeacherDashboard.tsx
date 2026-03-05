@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Class } from "../../types";
 import { Link } from "react-router-dom";
+import { classAPI } from "../../services/api";
 
 export default function TeacherDashboard() {
     const [classes, setClasses] = useState<Class[]>([])
@@ -14,45 +15,47 @@ export default function TeacherDashboard() {
         color: 'blue'
     })
 
-    const handleCreateClass = (e: React.FormEvent) => {
+    const handleCreateClass = async (e: React.FormEvent) => {
         e.preventDefault()
-        console.log('Creating class:', formData)
-        // TODO: API call to create class
-        setShowCreateModal(false)
-        setFormData({ name: '', subject: '', description: '', color: 'blue' })
+
+        try {
+            const newClass = await classAPI.createClass(formData)
+
+            // Add to local state
+            setClasses([...classes, newClass])
+
+            //Reset form
+            setShowCreateModal(false)
+            setFormData({
+                name: '',
+                subject: '',
+                description: '',
+                color: 'blue'
+            })
+
+            console.log('Class created:', newClass)
+
+        }
+        catch (error) {
+            console.error('Error creating class:', error)
+            alert('Failed to create class. Please try again.')
+        }
     }
 
     useEffect(() => {
-        // Simulate API call to fetch classes
-        setTimeout(() => {
-            setClasses([
-                {
-                    id: 1,
-                    name: 'Biology 101',
-                    subject: 'Science',
-                    description: 'Introduction to cellular biology and genetics',
-                    color: 'green',
-                    classCode: 'BIO101',
-                    teacher: { id: 1, name: 'Dr. Sarah Johnson' },
-                    studentCount: 24,
-                    deckCount: 5,
-                    createdAt: '2024-01-15'
-                },
-                {
-                    id: 2,
-                    name: 'Algebra II',
-                    subject: 'Mathematics',
-                    description: 'Advanced algebra concepts',
-                    color: 'blue',
-                    classCode: 'MATH202',
-                    teacher: { id: 1, name: 'Dr. Sarah Johnson' },
-                    studentCount: 28,
-                    deckCount: 8,
-                    createdAt: '2024-01-10'
-                }
-            ])
-            setLoading(false)
-        }, 500)
+        const fetchClasses = async () => {
+            try {
+                setLoading(true)
+                const data = await classAPI.getAllClasses()
+                setClasses(data)
+            } catch (error) {
+                console.error("Error fetching classes:", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchClasses()
     }, [])
 
     if (loading) {
@@ -234,8 +237,8 @@ export default function TeacherDashboard() {
                                                 type="button"
                                                 onClick={() => setFormData({ ...formData, color })}
                                                 className={`h-12 rounded-lg transition-all ${formData.color === color
-                                                        ? 'ring-4 ring-offset-2 ring-primary-500 scale-110'
-                                                        : 'hover:scale-105'
+                                                    ? 'ring-4 ring-offset-2 ring-primary-500 scale-110'
+                                                    : 'hover:scale-105'
                                                     } bg-gradient-to-br ${color === 'blue' ? 'from-blue-500 to-blue-600' :
                                                         color === 'green' ? 'from-green-500 to-green-600' :
                                                             color === 'red' ? 'from-red-500 to-red-600' :
