@@ -216,6 +216,14 @@ export const flashcardAPI = {
   ): Promise<void> => {
     await apiClient.patch(`/cards/${cardId}`, { difficulty })
   },
+
+  updateCard: async (
+    cardId: number,
+    cardData: { front: string; back: string; note?: string }
+  ): Promise<FlashCard> => {
+    const { data } = await apiClient.patch(`/cards/${cardId}`, cardData)
+    return data
+  }
 }
 export default apiClient
 

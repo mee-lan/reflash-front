@@ -6,8 +6,8 @@ import { store } from "./store/store"
 import { ProtectedRoute, Layout } from "./components"
 import { Dashboard, ClassView } from "./pages/student"
 import DeckStudy from "./pages/student/DeckStudy"
-import {TeacherDashboard,TeacherClassView} from "./pages/teacher"
-
+import { TeacherDashboard, TeacherClassView } from "./pages/teacher"
+import {TeacherDeckView} from "./pages/teacher"
 
 
 
@@ -64,6 +64,17 @@ function AppRoutes() {
           }
         />
         <Route path="/study/:deckId" element={<ProtectedRoute><DeckStudy /></ProtectedRoute>} />
+
+        <Route
+          path="/teacher/deck/:deckId"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <TeacherDeckView />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
 
         /* More routes as needed */
       </Routes>

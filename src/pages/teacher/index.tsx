@@ -1,4 +1,5 @@
 import TeacherDashboard from "./TeacherDashboard";
-import TeacherClassView from "./TeacherClassView";  
+import TeacherClassView from "./TeacherClassView";
+import TeacherDeckView from "./TeacherDeckView";  
 
-export {TeacherDashboard, TeacherClassView};
+export {TeacherDashboard, TeacherClassView, TeacherDeckView};

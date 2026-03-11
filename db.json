@@ -94,6 +94,16 @@
       "studiedCount": 0,
       "dueCount": 0,
       "createdAt": "2024-01-20"
+    },
+    {
+      "id": "a9f5",
+      "title": "test deck",
+      "description": "testing",
+      "classId": 5218,
+      "cardCount": 0,
+      "studiedCount": 0,
+      "dueCount": 0,
+      "createdAt": "2026-03-11T03:31:57.506Z"
     }
   ],
   "cards": [
@@ -126,6 +136,28 @@
       "note": "Can be free-floating or attached to the ER",
       "difficulty": "EASY",
       "nextReviewDate": "2024-02-20",
+      "repetitions": 0,
+      "easeFactor": 2.5
+    },
+    {
+      "id": "f7f3",
+      "front": "new",
+      "back": "new",
+      "note": "new",
+      "deckId": 2,
+      "difficulty": "MEDIUM",
+      "nextReviewDate": "2026-03-11T02:25:55.918Z",
+      "repetitions": 0,
+      "easeFactor": 2.5
+    },
+    {
+      "id": "c584",
+      "front": "newcard 1 1",
+      "back": "new card",
+      "note": "new card",
+      "deckId": 1,
+      "difficulty": "MEDIUM",
+      "nextReviewDate": "2026-03-11T02:37:33.511Z",
       "repetitions": 0,
       "easeFactor": 2.5
     }
