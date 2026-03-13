@@ -6,4 +6,6 @@ import Sidebar from "./Sidebar";
 import Header from "./Header"
 import Layout from "./Layout"
 import TeacherDeckCard from "./TeacherDeckCard";
-export { ProtectedRoute, ClassCard, DeckCard, FlashCard, Sidebar, Header, Layout, TeacherDeckCard }
+import MarkdownEditor from "./MarkdownEditor";
+import MarkdownViewer from "./MarkdownViewer";
+export { ProtectedRoute, ClassCard, DeckCard, FlashCard, Sidebar, Header, Layout, TeacherDeckCard, MarkdownEditor, MarkdownViewer }

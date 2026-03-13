@@ -113,7 +113,7 @@
       "front": "What is the function of the mitochondria?",
       "back": "The mitochondria is the powerhouse of the cell, responsible for producing ATP through cellular respiration.",
       "note": "Remember: Mighty mitochondria makes ATP!",
-      "difficulty": "MEDIUM",
+      "difficulty": "EASY",
       "nextReviewDate": "2024-02-20",
       "repetitions": 0,
       "easeFactor": 2.5
@@ -123,7 +123,7 @@
       "deckId": 1,
       "front": "What is the cell membrane composed of?",
       "back": "The cell membrane is composed of a phospholipid bilayer with embedded proteins.",
-      "difficulty": "EASY",
+      "difficulty": "MEDIUM",
       "nextReviewDate": "2024-02-20",
       "repetitions": 0,
       "easeFactor": 2.5
@@ -156,8 +156,30 @@
       "back": "new card",
       "note": "new card",
       "deckId": 1,
-      "difficulty": "MEDIUM",
+      "difficulty": "EASY",
       "nextReviewDate": "2026-03-11T02:37:33.511Z",
+      "repetitions": 0,
+      "easeFactor": 2.5
+    },
+    {
+      "id": "c504",
+      "front": "**What did you study**\n\n*Didnt you?*\n\n#### WELL \n![image](https://www.shutterstock.com/image-vector/address-navigation-bar-https-www-260nw-2572492335.jpg)\n",
+      "back": "okay man",
+      "note": "no hint for this",
+      "deckId": 1,
+      "difficulty": "EASY",
+      "nextReviewDate": "2026-03-13T15:20:50.712Z",
+      "repetitions": 0,
+      "easeFactor": 2.5
+    },
+    {
+      "id": "1a65",
+      "front": "**What did you study**\n\n*Didnt you?*\n\n#### WELL \n![image](https://www.shutterstock.com/image-vector/address-navigation-bar-https-www-260nw-2572492335.jpg)\n\n\n**What did you study**\n\n*Didnt you?*\n\n#### WELL \n![image](https://www.shutterstock.com/image-vector/address-navigation-bar-https-www-260nw-2572492335.jpg)\n\n\n**What did you study**\n\n*Didnt you?*\n\n#### WELL \n![image](https://www.shutterstock.com/image-vector/address-navigation-bar-https-www-260nw-2572492335.jpg)\n\n\n**What did you study**\n\n*Didnt you?*\n\n#### WELL \n![image](https://www.shutterstock.com/image-vector/address-navigation-bar-https-www-260nw-2572492335.jpg)\n\n\n\n",
+      "back": "**What did you study**\n\n*Didnt you?*\n\n#### WELL \n![image](https://www.shutterstock.com/image-vector/address-navigation-bar-https-www-260nw-2572492335.jpg)\n\n\n**What did you study**\n\n*Didnt you?*\n\n#### WELL \n![image](https://www.shutterstock.com/image-vector/address-navigation-bar-https-www-260nw-2572492335.jpg)\n\n\n**What did you study**\n\n*Didnt you?*\n\n#### WELL \n![image](https://www.shutterstock.com/image-vector/address-navigation-bar-https-www-260nw-2572492335.jpg)\n\n\n**What did you study**\n\n*Didnt you?*\n\n#### WELL \n![image](https://www.shutterstock.com/image-vector/address-navigation-bar-https-www-260nw-2572492335.jpg)\n\n\n\n\n\n**What did you study**\n\n*Didnt you?*\n\n#### WELL \n![image](https://www.shutterstock.com/image-vector/address-navigation-bar-https-www-260nw-2572492335.jpg)\n\n\n**What did you study**\n\n*Didnt you?*\n\n#### WELL \n![image](https://www.shutterstock.com/image-vector/address-navigation-bar-https-www-260nw-2572492335.jpg)\n#### WELL \n![image](https://www.shutterstock.com/image-vector/address-navigation-bar-https-www-260nw-2572492335.jpg)\n\n\n**What did you study**\n\n*Didnt you?*\n\n#### WELL \n![image](https://www.shutterstock.com/image-vector/address-navigation-bar-https-www-260nw-2572492335.jpg)\n\n\n\n",
+      "note": "",
+      "deckId": 1,
+      "difficulty": "MEDIUM",
+      "nextReviewDate": "2026-03-13T15:33:19.145Z",
       "repetitions": 0,
       "easeFactor": 2.5
     }
