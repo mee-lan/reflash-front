@@ -1,10 +1,30 @@
-export interface User {
+export type UserRole = 'STUDENT' | 'TEACHER'
+
+export interface StudentUser {
   id: number
+  firstName: string
+  lastName: string
+  grade: string
+  section: string
+  roll: string
+  academicYear: string
+  role: 'STUDENT'
+}
+
+export interface TeacherUser {
+  id: number
+  firstName: string
+  lastName: string
   username: string
   email: string
-  firstname: string
-  lastname: string
-  role: 'STUDENT' | 'TEACHER'
+  role: 'TEACHER'
+}
+
+export type AuthUser = StudentUser | TeacherUser
+
+export interface ApiResponse<T> {
+  message?: string
+  mainBody?: T
 }
 
 export interface Class {

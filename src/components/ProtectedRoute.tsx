@@ -1,19 +1,43 @@
 import React, { useEffect } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { Navigate } from 'react-router-dom'
 import type { AppDispatch, RootState } from '../store/store'
 import { checkAuth } from '../store/authSlice'
+import type { AuthUser, UserRole } from '../types'
 
-export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-    const dispatch = useDispatch<AppDispatch>()
-    
-    // const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated)
+function getHomeRoute(user: AuthUser | null) {
+  return user?.role === 'TEACHER' ? '/teacher/dashboard' : '/dashboard'
+}
 
-    const isAuthenticated = true // For testing purpose only
+export default function ProtectedRoute({
+  children,
+  allowedRoles,
+}: {
+  children: React.ReactNode
+  allowedRoles?: UserRole[]
+}) {
+  const dispatch = useDispatch<AppDispatch>()
+  const { isAuthenticated, loading, user } = useSelector((state: RootState) => state.auth)
 
-    useEffect(() => {
-        dispatch(checkAuth())
-    }, [dispatch])
+  useEffect(() => {
+    dispatch(checkAuth())
+  }, [dispatch])
 
-    return isAuthenticated ? children : <Navigate to="/login" />
+  if (loading && !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-neutral-50 center">
+        <div className="spinner"></div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to={getHomeRoute(user)} replace />
+  }
+
+  return children
 }

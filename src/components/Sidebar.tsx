@@ -1,7 +1,12 @@
 import { useLocation,Link } from "react-router-dom"
+import { useSelector } from "react-redux"
+import type { RootState } from "../store/store"
 
 export default function Sidebar(){
     const location = useLocation()
+    const user = useSelector((state: RootState) => state.auth.user)
+    const dashboardPath = user?.role === 'TEACHER' ? '/teacher/dashboard' : '/dashboard'
+    const classPathPrefix = user?.role === 'TEACHER' ? '/teacher/class' : '/class'
     
     const isActive = (path: string) => {
         return location.pathname === path || location.pathname.startsWith(path)
@@ -27,9 +32,9 @@ export default function Sidebar(){
         <ul className="space-y-2">
           <li>
             <Link
-              to="/dashboard"
+              to={dashboardPath}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive('/dashboard')
+                isActive(dashboardPath)
                   ? 'bg-primary-50 text-primary-600 font-medium'
                   : 'text-neutral-600 hover:bg-neutral-50'
               }`}
@@ -43,9 +48,9 @@ export default function Sidebar(){
 
           <li>
             <Link
-              to="/dashboard"
+              to={dashboardPath}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive('/class')
+                isActive(classPathPrefix)
                   ? 'bg-primary-50 text-primary-600 font-medium'
                   : 'text-neutral-600 hover:bg-neutral-50'
               }`}

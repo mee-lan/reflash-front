@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import ClassCard from "../../components/ClassCard";
 import type { Class } from "../../types";
 import { classAPI } from "../../services/api";
+import type { RootState } from "../../store/store";
 
 export default function Dashboard() {
   const [classes, setClasses] = useState<Class[]>([])
   const [loading, setloading] = useState(true)
+  const user = useSelector((state: RootState) => state.auth.user)
 
   useEffect(() => {
   const fetchClasses = async () => {
@@ -33,8 +36,14 @@ export default function Dashboard() {
 
   return (
     <div className="container-custom py-8">
-      <h1 className="mb-2">My Classes</h1>
-      <p className="text-neutral-600 mb-8">Choose a class to start studying</p>
+      <h1 className="mb-2">
+        {user ? `${user.firstName}'s Classes` : 'My Classes'}
+      </h1>
+      <p className="text-neutral-600 mb-8">
+        {user?.role === 'STUDENT'
+          ? `Grade ${user.grade} • Section ${user.section} • Roll ${user.roll}`
+          : 'Choose a class to start studying'}
+      </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {classes.map(classData => (
