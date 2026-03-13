@@ -1,13 +1,29 @@
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import type { AppDispatch } from "../store/store";
+import type { AppDispatch, RootState } from "../store/store";
 import { useState } from "react";
 import { logout } from "../store/authSlice";
 
 export default function Header() {
     const navigate = useNavigate()
     const dispatch = useDispatch<AppDispatch>()
+    const user = useSelector((state: RootState) => state.auth.user)
     const [showUserMenu, setShowUserMenu] = useState(false)
+
+    const displayName = user ? `${user.firstName} ${user.lastName}` : 'User'
+    const subtitle = user?.role === 'TEACHER'
+        ? 'Teacher'
+        : user
+            ? `Grade ${user.grade} • Section ${user.section}`
+            : 'Student'
+    const detailText = user?.role === 'TEACHER'
+        ? user.email
+        : user
+            ? `Roll ${user.roll} • ${user.academicYear}`
+            : ''
+    const initials = user
+        ? `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toUpperCase()
+        : 'U'
 
     const handleLogout = async () => {
 
@@ -57,11 +73,11 @@ export default function Header() {
                                 className="flex items-center gap-3 p-2 hover:bg-neutral-100 rounded-lg transition-colors"
                             >
                                 <div className="w-8 h-8 bg-primary-500 rounded-full center text-white font-medium">
-                                    U
+                                    {initials}
                                 </div>
                                 <div className="text-left">
-                                    <p className="text-sm font-medium text-neutral-900">Username</p>
-                                    <p className="text-xs text-neutral-500">Student</p>
+                                    <p className="text-sm font-medium text-neutral-900">{displayName}</p>
+                                    <p className="text-xs text-neutral-500">{subtitle}</p>
                                 </div>
                                 <svg
                                     className={`w-4 h-4 text-neutral-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`}
@@ -77,8 +93,8 @@ export default function Header() {
                             {showUserMenu && (
                                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-neutral-200 py-2 animate-slide-down">
                                     <div className="px-4 py-3 border-b border-neutral-200">
-                                        <p className="text-sm font-medium text-neutral-900">Username</p>
-                                        <p className="text-xs text-neutral-500">username@gmail.com</p>
+                                        <p className="text-sm font-medium text-neutral-900">{displayName}</p>
+                                        <p className="text-xs text-neutral-500">{detailText}</p>
                                     </div>
 
                                     <button

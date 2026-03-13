@@ -28,7 +28,7 @@ function AppRoutes() {
         <Route path="/login" element={<Login />}></Route>
         <Route path="/register" element={<Register />}></Route>
         <Route path="/dashboard" element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['STUDENT']}>
             <Layout>
               <Dashboard />
             </Layout>
@@ -38,7 +38,7 @@ function AppRoutes() {
         <Route
           path="/teacher/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <Layout>
                 <TeacherDashboard />
               </Layout>
@@ -46,7 +46,7 @@ function AppRoutes() {
           }
         />
         <Route path="/class/:classId" element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['STUDENT']}>
             <Layout>
               <ClassView />
             </Layout>
@@ -56,27 +56,25 @@ function AppRoutes() {
         <Route
           path="/teacher/class/:classId"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <Layout>
                 <TeacherClassView />
               </Layout>
             </ProtectedRoute>
           }
         />
-        <Route path="/study/:deckId" element={<ProtectedRoute><DeckStudy /></ProtectedRoute>} />
+        <Route path="/study/:deckId" element={<ProtectedRoute allowedRoles={['STUDENT']}><DeckStudy /></ProtectedRoute>} />
 
         <Route
           path="/teacher/deck/:deckId"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['TEACHER']}>
               <Layout>
                 <TeacherDeckView />
               </Layout>
             </ProtectedRoute>
           }
         />
-
-        /* More routes as needed */
       </Routes>
     </BrowserRouter>
   )

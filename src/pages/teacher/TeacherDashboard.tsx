@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import type { Class } from "../../types";
 import { Link } from "react-router-dom";
 import { classAPI } from "../../services/api";
+import type { RootState } from "../../store/store";
 
 export default function TeacherDashboard() {
     const [classes, setClasses] = useState<Class[]>([])
     const [loading, setLoading] = useState(true)
     const [showCreateModal, setShowCreateModal] = useState(false)
+    const user = useSelector((state: RootState) => state.auth.user)
 
     const [formData, setFormData] = useState({
         name: '',
@@ -71,8 +74,14 @@ export default function TeacherDashboard() {
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h1 className="mb-2">My Classes</h1>
-                    <p className="text-neutral-600">Manage your classes and student progress</p>
+                    <h1 className="mb-2">
+                        {user ? `${user.firstName}'s Classes` : 'My Classes'}
+                    </h1>
+                    <p className="text-neutral-600">
+                        {user?.role === 'TEACHER'
+                            ? `${user.email} • ${user.username}`
+                            : 'Manage your classes and student progress'}
+                    </p>
                 </div>
 
                 <button

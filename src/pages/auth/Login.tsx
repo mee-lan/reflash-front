@@ -5,8 +5,7 @@ import { useDispatch } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import type { AppDispatch } from '../../store/store'
 import { login } from '../../store/authSlice'
-
-
+import type { UserRole } from '../../types'
 
 export default function Login() {
   const dispatch = useDispatch<AppDispatch>()
@@ -14,6 +13,7 @@ export default function Login() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    role: 'STUDENT' as UserRole,
     rememberMe: false,
   })
 
@@ -33,6 +33,13 @@ export default function Login() {
     if (errors[name as keyof typeof errors]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
     }
+  }
+
+  const handleRoleSelect = (role: UserRole) => {
+    setFormData((prev) => ({
+      ...prev,
+      role,
+    }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,13 +75,15 @@ export default function Login() {
     try {
       const resultAction = await dispatch(login({
         email: formData.email,
-        password: formData.password
+        password: formData.password,
+        role: formData.role,
       }))
 
       if (login.fulfilled.match(resultAction)) {
-
-        // On successful login, navigate to dashboard
-        navigate('/dashboard')
+        const destination = resultAction.payload.role === 'TEACHER'
+          ? '/teacher/dashboard'
+          : '/dashboard'
+        navigate(destination)
         console.log("Login successful!")
       } else {
         setErrors(prev => ({
@@ -164,6 +173,31 @@ export default function Login() {
                 {errors.password && (
                   <p className="form-error">{errors.password}</p>
                 )}
+              </div>
+
+              <div className="form-group">
+                <p className="form-label mb-3">Login As</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${formData.role === 'STUDENT' ? 'border-primary-500 bg-primary-50' : 'border-neutral-300 bg-white'}`}>
+                    <input
+                      type="checkbox"
+                      checked={formData.role === 'STUDENT'}
+                      onChange={() => handleRoleSelect('STUDENT')}
+                      className="w-4 h-4 text-primary-500 border-neutral-300 rounded focus:ring-primary-500"
+                    />
+                    <span className="text-sm font-medium text-neutral-800">Student</span>
+                  </label>
+
+                  <label className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${formData.role === 'TEACHER' ? 'border-primary-500 bg-primary-50' : 'border-neutral-300 bg-white'}`}>
+                    <input
+                      type="checkbox"
+                      checked={formData.role === 'TEACHER'}
+                      onChange={() => handleRoleSelect('TEACHER')}
+                      className="w-4 h-4 text-primary-500 border-neutral-300 rounded focus:ring-primary-500"
+                    />
+                    <span className="text-sm font-medium text-neutral-800">Teacher</span>
+                  </label>
+                </div>
               </div>
 
               {/* Remember Me & Forgot Password */}
