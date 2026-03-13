@@ -273,8 +273,8 @@ export default function TeacherDeckView() {
 
             {/* Create Card Modal */}
             {showCreateCardModal && (
-                <div className="fixed inset-0 bg-black/50 center z-50 p-4">
-                    <div className="card max-w-2xl w-full animate-scale-in">
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+                    <div className="card max-w-5xl w-full my-8 animate-scale-in max-h-[90vh] overflow-y-auto">
                         <div className="card-body">
                             <div className="flex items-center justify-between mb-6">
                                 <h2>Add New Flashcard</h2>
@@ -396,8 +396,8 @@ export default function TeacherDeckView() {
 
             {/* Edit Card Modal */}
             {showEditModal && (
-                <div className="fixed inset-0 bg-black/50 center z-50 p-4">
-                    <div className="card max-w-2xl w-full animate-scale-in">
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+                    <div className="card max-w-5xl w-full my-8 animate-scale-in max-h-[90vh] overflow-y-auto">
                         <div className="card-body">
                             <div className="flex items-center justify-between mb-6">
                                 <h2>Edit Flashcard</h2>
@@ -416,26 +416,18 @@ export default function TeacherDeckView() {
 
                             <form onSubmit={handleEditCard} className="space-y-4">
                                 <div className="form-group">
-                                    <label className="form-label">Question (Front) *</label>
-                                    <textarea
+                                    <label className="form-label font-bold">Question (Front) *</label>
+                                    <MarkdownEditor
                                         value={editFormData.front}
-                                        onChange={(e) => setEditFormData({ ...editFormData, front: e.target.value })}
-                                        className="form-input"
-                                        placeholder="Enter the question..."
-                                        rows={3}
-                                        required
+                                        onChange={(value) => setEditFormData({ ...editFormData, front: value })}
                                     />
                                 </div>
 
                                 <div className="form-group">
-                                    <label className="form-label">Answer (Back) *</label>
-                                    <textarea
+                                    <label className="form-label font-bold">Answer (Back) *</label>
+                                    <MarkdownEditor
                                         value={editFormData.back}
-                                        onChange={(e) => setEditFormData({ ...editFormData, back: e.target.value })}
-                                        className="form-input"
-                                        placeholder="Enter the answer..."
-                                        rows={3}
-                                        required
+                                        onChange={(value) => setEditFormData({ ...editFormData, back: value })}
                                     />
                                 </div>
 
