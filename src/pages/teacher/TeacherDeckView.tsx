@@ -1,7 +1,8 @@
 import type { FlashCard, Deck } from "../../types";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { deckAPI, flashcardAPI } from "../../services/api";
+import { MarkdownEditor } from "../../components";
 
 export default function TeacherDeckView() {
     const { deckId } = useParams<{ deckId: string }>();
@@ -290,25 +291,36 @@ export default function TeacherDeckView() {
                             <form onSubmit={handleCreateCard} className="space-y-4">
                                 <div className="form-group">
                                     <label className="form-label">Question (Front) *</label>
-                                    <textarea
+                                    {/* <textarea
                                         value={cardFormData.front}
                                         onChange={(e) => setCardFormData({ ...cardFormData, front: e.target.value })}
                                         className="form-input"
                                         placeholder="Enter the question..."
                                         rows={3}
                                         required
+                                    /> */}
+
+                                    <MarkdownEditor
+                                        value={cardFormData.front}
+                                        onChange={(value) => setCardFormData({ ...cardFormData, front: value })}
                                     />
                                 </div>
 
                                 <div className="form-group">
                                     <label className="form-label">Answer (Back) *</label>
-                                    <textarea
+                                    {/* <textarea
                                         value={cardFormData.back}
                                         onChange={(e) => setCardFormData({ ...cardFormData, back: e.target.value })}
                                         className="form-input"
                                         placeholder="Enter the answer..."
                                         rows={3}
                                         required
+                                    /> */}
+
+
+                                    <MarkdownEditor
+                                        value={cardFormData.back}
+                                        onChange={(value) => setCardFormData({ ...cardFormData, back: value })}
                                     />
                                 </div>
 
@@ -383,7 +395,7 @@ export default function TeacherDeckView() {
             )}
 
             {/* Edit Card Modal */}
-            {showEditModal  && (
+            {showEditModal && (
                 <div className="fixed inset-0 bg-black/50 center z-50 p-4">
                     <div className="card max-w-2xl w-full animate-scale-in">
                         <div className="card-body">
