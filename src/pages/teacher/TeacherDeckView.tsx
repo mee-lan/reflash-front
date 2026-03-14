@@ -2,7 +2,7 @@ import type { FlashCard, Deck } from "../../types";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { deckAPI, flashcardAPI } from "../../services/api";
-import { MarkdownEditor } from "../../components";
+import { AIGenerateButton, MarkdownEditor, MarkdownViewer } from "../../components";
 
 export default function TeacherDeckView() {
     const { deckId } = useParams<{ deckId: string }>();
@@ -47,6 +47,11 @@ export default function TeacherDeckView() {
 
     const handleCreateCard = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
+        if (!cardFormData.front.trim() || !cardFormData.back.trim()) {
+            alert('Please fill in both Question and Answer fields')
+            return
+        }
 
         try {
             const newCard = await flashcardAPI.createCard(Number(deckId), cardFormData);
@@ -249,18 +254,22 @@ export default function TeacherDeckView() {
                                     <div className="space-y-3">
                                         <div>
                                             <p className="text-xs font-medium text-neutral-600 mb-1">Question:</p>
-                                            <p className="text-neutral-900">{card.front}</p>
+                                            <div className="text-neutral-900 prose prose-sm max-w-none break-words">
+                                                <MarkdownViewer content={card.front} />
+                                            </div>
                                         </div>
 
                                         <div className="border-t border-neutral-200 pt-3">
                                             <p className="text-xs font-medium text-neutral-600 mb-1">Answer:</p>
-                                            <p className="text-neutral-900">{card.back}</p>
+                                            <div className="text-neutral-900 prose prose-sm max-w-none break-words">
+                                                <MarkdownViewer content={card.back} />
+                                            </div>
                                         </div>
 
                                         {card.note && (
                                             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                                                 <p className="text-xs font-medium text-yellow-900 mb-1">Note:</p>
-                                                <p className="text-sm text-yellow-800">{card.note}</p>
+                                                <p className="text-sm text-yellow-800 break-words">{card.note}</p>
                                             </div>
                                         )}
                                     </div>
@@ -288,36 +297,31 @@ export default function TeacherDeckView() {
                                 </button>
                             </div>
 
-                            <form onSubmit={handleCreateCard} className="space-y-4">
+                            <form onSubmit={handleCreateCard}>
+
+                                {/* AI Generate Button - at the top */}
+                                <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg">
+                                    <AIGenerateButton
+                                        onGenerate={(data) => setCardFormData({
+                                            front: data.question,
+                                            back: data.answer,
+                                            note: data.hint
+                                        })}
+                                    />
+                                </div>
+
+                                {/* Question Field */}
                                 <div className="form-group">
                                     <label className="form-label">Question (Front) *</label>
-                                    {/* <textarea
-                                        value={cardFormData.front}
-                                        onChange={(e) => setCardFormData({ ...cardFormData, front: e.target.value })}
-                                        className="form-input"
-                                        placeholder="Enter the question..."
-                                        rows={3}
-                                        required
-                                    /> */}
-
                                     <MarkdownEditor
                                         value={cardFormData.front}
                                         onChange={(value) => setCardFormData({ ...cardFormData, front: value })}
                                     />
                                 </div>
 
+                                {/* Answer Field */}
                                 <div className="form-group">
                                     <label className="form-label">Answer (Back) *</label>
-                                    {/* <textarea
-                                        value={cardFormData.back}
-                                        onChange={(e) => setCardFormData({ ...cardFormData, back: e.target.value })}
-                                        className="form-input"
-                                        placeholder="Enter the answer..."
-                                        rows={3}
-                                        required
-                                    /> */}
-
-
                                     <MarkdownEditor
                                         value={cardFormData.back}
                                         onChange={(value) => setCardFormData({ ...cardFormData, back: value })}
@@ -352,116 +356,121 @@ export default function TeacherDeckView() {
                         </div>
                     </div>
                 </div>
-            )}
+            )
+            }
 
             {/* Delete Confirmation  Modal */}
-            {showDeleteConfirm && selectedCard && (
-                <div className="fixed inset-0 bg-black/50 center z-50 p-4">
-                    <div className="card max-w-md w-full animate-scale-in">
-                        <div className="card-body">
-                            <div className="text-center">
-                                <div className="w-12 h-12 bg-red-100 rounded-full center mx-auto mb-4">
-                                    <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                    </svg>
-                                </div>
+            {
+                showDeleteConfirm && selectedCard && (
+                    <div className="fixed inset-0 bg-black/50 center z-50 p-4">
+                        <div className="card max-w-md w-full animate-scale-in">
+                            <div className="card-body">
+                                <div className="text-center">
+                                    <div className="w-12 h-12 bg-red-100 rounded-full center mx-auto mb-4">
+                                        <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                        </svg>
+                                    </div>
 
-                                <h3 className="text-lg font-semibold text-neutral-900 mb-2">Delete Card?</h3>
-                                <p className="text-neutral-600 mb-6">
-                                    This action cannot be undone. The card will be permanently removed.
-                                </p>
+                                    <h3 className="text-lg font-semibold text-neutral-900 mb-2">Delete Card?</h3>
+                                    <p className="text-neutral-600 mb-6">
+                                        This action cannot be undone. The card will be permanently removed.
+                                    </p>
 
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={() => {
-                                            setShowDeleteConfirm(false)
-                                            setSelectedCard(null)
-                                        }}
-                                        className="btn-ghost flex-1"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleDeleteCard}
-                                        className="btn-error flex-1"
-                                    >
-                                        Delete
-                                    </button>
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => {
+                                                setShowDeleteConfirm(false)
+                                                setSelectedCard(null)
+                                            }}
+                                            className="btn-ghost flex-1"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={handleDeleteCard}
+                                            className="btn-error flex-1"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Edit Card Modal */}
-            {showEditModal && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-                    <div className="card max-w-5xl w-full my-8 animate-scale-in max-h-[90vh] overflow-y-auto">
-                        <div className="card-body">
-                            <div className="flex items-center justify-between mb-6">
-                                <h2>Edit Flashcard</h2>
-                                <button
-                                    onClick={() => {
-                                        setShowEditModal(false)
-                                        setSelectedCard(null)
-                                    }}
-                                    className="text-neutral-400 hover:text-neutral-600"
-                                >
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-
-                            <form onSubmit={handleEditCard} className="space-y-4">
-                                <div className="form-group">
-                                    <label className="form-label font-bold">Question (Front) *</label>
-                                    <MarkdownEditor
-                                        value={editFormData.front}
-                                        onChange={(value) => setEditFormData({ ...editFormData, front: value })}
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label className="form-label font-bold">Answer (Back) *</label>
-                                    <MarkdownEditor
-                                        value={editFormData.back}
-                                        onChange={(value) => setEditFormData({ ...editFormData, back: value })}
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label className="form-label">Note (Optional)</label>
-                                    <textarea
-                                        value={editFormData.note}
-                                        onChange={(e) => setEditFormData({ ...editFormData, note: e.target.value })}
-                                        className="form-input"
-                                        placeholder="Add a helpful note or mnemonic..."
-                                        rows={2}
-                                    />
-                                </div>
-
-                                <div className="flex gap-3 mt-6">
+            {
+                showEditModal && (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+                        <div className="card max-w-5xl w-full my-8 animate-scale-in max-h-[90vh] overflow-y-auto">
+                            <div className="card-body">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2>Edit Flashcard</h2>
                                     <button
-                                        type="button"
                                         onClick={() => {
                                             setShowEditModal(false)
                                             setSelectedCard(null)
                                         }}
-                                        className="btn-ghost flex-1"
+                                        className="text-neutral-400 hover:text-neutral-600"
                                     >
-                                        Cancel
-                                    </button>
-                                    <button type="submit" className="btn-primary flex-1">
-                                        Save Changes
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
                                     </button>
                                 </div>
-                            </form>
+
+                                <form onSubmit={handleEditCard} className="space-y-4">
+                                    <div className="form-group">
+                                        <label className="form-label font-bold">Question (Front) *</label>
+                                        <MarkdownEditor
+                                            value={editFormData.front}
+                                            onChange={(value) => setEditFormData({ ...editFormData, front: value })}
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label font-bold">Answer (Back) *</label>
+                                        <MarkdownEditor
+                                            value={editFormData.back}
+                                            onChange={(value) => setEditFormData({ ...editFormData, back: value })}
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">Note (Optional)</label>
+                                        <textarea
+                                            value={editFormData.note}
+                                            onChange={(e) => setEditFormData({ ...editFormData, note: e.target.value })}
+                                            className="form-input"
+                                            placeholder="Add a helpful note or mnemonic..."
+                                            rows={2}
+                                        />
+                                    </div>
+
+                                    <div className="flex gap-3 mt-6">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setShowEditModal(false)
+                                                setSelectedCard(null)
+                                            }}
+                                            className="btn-ghost flex-1"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button type="submit" className="btn-primary flex-1">
+                                            Save Changes
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     )
 }
