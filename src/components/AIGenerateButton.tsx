@@ -1,12 +1,13 @@
 import { useState } from "react";
 
 interface AIGenerateButtonProps {
-    onGenerate: (data: { question: string; answer: string; hint: string }) => void
+    onGenerate: (payload: { text: string; count: number }) => Promise<void> | void
 }
 
 export default function AIGenerateButton({ onGenerate }: AIGenerateButtonProps) {
     const [showModal, setShowModal] = useState(false);
     const [content, setContent] = useState('')
+    const [count, setCount] = useState(5)
 
     const [loading, setLoading] = useState(false);
 
@@ -18,19 +19,17 @@ export default function AIGenerateButton({ onGenerate }: AIGenerateButtonProps) 
 
         setLoading(true);
 
-        // Simulate API call to generate content based on prompt
-        setTimeout(() => {
-            const mockData = {
-                question: `**What is the main concept?**\n\nBased on the content: "${content.substring(0, 50)}..."`,
-                answer: `**Answer:**\n\nThe main concept is... (AI will generate based on your content)\n\n- Point 1\n- Point 2\n- Point 3`,
-                hint: `Remember: Key concept from the content`
-            }
-
-            onGenerate(mockData)
+        try {
+            await onGenerate({ text: content, count })
             setShowModal(false)
             setContent('')
+            setCount(5)
+        } catch (error) {
+            console.error('Failed to generate flashcards:', error)
+            alert('Failed to generate flashcards. Please try again.')
+        } finally {
             setLoading(false)
-        }, 2000)
+        }
     }
 
     return (
@@ -58,8 +57,21 @@ export default function AIGenerateButton({ onGenerate }: AIGenerateButtonProps) 
                                 </div>
                                 <div>
                                     <h3 className="text-xl font-bold">Generate Flashcard with AI</h3>
-                                    <p className="text-sm text-neutral-600">Paste your content and AI will create question, answer, and hint</p>
+                                    <p className="text-sm text-neutral-600">Paste your content and AI will create editable draft flashcards</p>
                                 </div>
+                            </div>
+
+                            <div className="form-group mb-4">
+                                <label className="form-label">Number of Cards</label>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    max={20}
+                                    value={count}
+                                    onChange={(e) => setCount(Math.max(1, Math.min(20, Number(e.target.value) || 1)))}
+                                    className="form-input"
+                                    disabled={loading}
+                                />
                             </div>
 
                             <div className="form-group">
@@ -76,7 +88,7 @@ Photosynthesis is the process by which plants use sunlight, water, and carbon di
                                     disabled={loading}
                                 />
                                 <p className="form-help">
-                                    💡 Paste any educational content - AI will generate a question, answer, and helpful hint
+                                    Paste any educational content. The generated cards will appear in the add-card modal for review and editing.
                                 </p>
                             </div>
 
@@ -103,7 +115,7 @@ Photosynthesis is the process by which plants use sunlight, water, and carbon di
                                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                             </svg>
-                                            Generate Flashcard
+                                            Generate Draft Cards
                                         </>
                                     )}
                                 </button>

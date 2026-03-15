@@ -1,8 +1,15 @@
 import type { FlashCard, Deck } from "../../types";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { deckAPI, flashcardAPI } from "../../services/api";
+import { aiAPI, deckAPI, flashcardAPI } from "../../services/api";
 import { AIGenerateButton, MarkdownEditor, MarkdownViewer } from "../../components";
+
+type AIGeneratedCardDraft = {
+    id: number
+    question: string
+    answer: string
+    hint: string
+}
 
 export default function TeacherDeckView() {
     const { deckId } = useParams<{ deckId: string }>();
@@ -25,6 +32,7 @@ export default function TeacherDeckView() {
         back: '',
         note: ''
     })
+    const [aiDraftCards, setAIDraftCards] = useState<AIGeneratedCardDraft[]>([])
 
     useEffect(() => {
         const fetchData = async () => {
@@ -104,6 +112,81 @@ export default function TeacherDeckView() {
         } catch (error) {
             console.error('Failed to update card:', error)
             alert('Failed to update card. Please try again.')
+        }
+    }
+
+    const handleGenerateAICards = async ({ text, count }: { text: string; count: number }) => {
+        const generatedCards = await aiAPI.generateFlashcards({ text, count })
+        setAIDraftCards(
+            generatedCards.map((card, index) => ({
+                id: Date.now() + index,
+                question: card.question,
+                answer: card.answer,
+                hint: card.hint,
+            }))
+        )
+    }
+
+    const handleUpdateAIDraft = (draftId: number, field: keyof Omit<AIGeneratedCardDraft, 'id'>, value: string) => {
+        setAIDraftCards((currentDrafts) =>
+            currentDrafts.map((draft) => (draft.id === draftId ? { ...draft, [field]: value } : draft))
+        )
+    }
+
+    const handleDiscardAIDraft = (draftId: number) => {
+        setAIDraftCards((currentDrafts) => currentDrafts.filter((draft) => draft.id !== draftId))
+    }
+
+    const handleConfirmAIDraft = async (draftId: number) => {
+        const draft = aiDraftCards.find((item) => item.id === draftId)
+
+        if (!draft) {
+            return
+        }
+
+        if (!draft.question.trim() || !draft.answer.trim()) {
+            alert('Generated card needs both question and answer before confirming.')
+            return
+        }
+
+        try {
+            const createdCard = await flashcardAPI.createCard(Number(deckId), {
+                front: draft.question,
+                back: draft.answer,
+                note: draft.hint,
+            })
+            setCards((currentCards) => [...currentCards, createdCard])
+            setAIDraftCards((currentDrafts) => currentDrafts.filter((item) => item.id !== draftId))
+        } catch (error) {
+            console.error('Failed to confirm AI generated card:', error)
+            alert('Failed to save generated card. Please try again.')
+        }
+    }
+
+    const handleConfirmAllAIDrafts = async () => {
+        for (const draft of aiDraftCards) {
+            if (!draft.question.trim() || !draft.answer.trim()) {
+                alert('Every generated card needs both question and answer before confirming all.')
+                return
+            }
+        }
+
+        try {
+            const createdCards = await Promise.all(
+                aiDraftCards.map((draft) =>
+                    flashcardAPI.createCard(Number(deckId), {
+                        front: draft.question,
+                        back: draft.answer,
+                        note: draft.hint,
+                    })
+                )
+            )
+
+            setCards((currentCards) => [...currentCards, ...createdCards])
+            setAIDraftCards([])
+        } catch (error) {
+            console.error('Failed to confirm all AI generated cards:', error)
+            alert('Failed to save generated cards. Please try again.')
         }
     }
 
@@ -302,13 +385,85 @@ export default function TeacherDeckView() {
                                 {/* AI Generate Button - at the top */}
                                 <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg">
                                     <AIGenerateButton
-                                        onGenerate={(data) => setCardFormData({
-                                            front: data.question,
-                                            back: data.answer,
-                                            note: data.hint
-                                        })}
+                                        onGenerate={handleGenerateAICards}
                                     />
                                 </div>
+
+                                {aiDraftCards.length > 0 && (
+                                    <div className="mb-8 rounded-lg border border-primary-200 bg-primary-50/50 p-4">
+                                        <div className="mb-4 flex items-center justify-between gap-4">
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-neutral-900">AI Generated Drafts</h3>
+                                                <p className="text-sm text-neutral-600">
+                                                    Review each generated card, edit as needed, then confirm or discard it.
+                                                </p>
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                onClick={handleConfirmAllAIDrafts}
+                                                className="btn-primary"
+                                            >
+                                                Confirm All
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            {aiDraftCards.map((draft, index) => (
+                                                <div key={draft.id} className="rounded-lg border border-neutral-200 bg-white p-4">
+                                                    <div className="mb-3 flex items-center justify-between">
+                                                        <span className="text-sm font-semibold text-neutral-900">Generated Card #{index + 1}</span>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleDiscardAIDraft(draft.id)}
+                                                                className="btn-ghost"
+                                                            >
+                                                                Discard
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleConfirmAIDraft(draft.id)}
+                                                                className="btn-primary"
+                                                            >
+                                                                Confirm Card
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-4">
+                                                        <div className="form-group">
+                                                            <label className="form-label font-bold">Question</label>
+                                                            <MarkdownEditor
+                                                                value={draft.question}
+                                                                onChange={(value) => handleUpdateAIDraft(draft.id, 'question', value)}
+                                                            />
+                                                        </div>
+
+                                                        <div className="form-group">
+                                                            <label className="form-label font-bold">Answer</label>
+                                                            <MarkdownEditor
+                                                                value={draft.answer}
+                                                                onChange={(value) => handleUpdateAIDraft(draft.id, 'answer', value)}
+                                                            />
+                                                        </div>
+
+                                                        <div className="form-group">
+                                                            <label className="form-label">Hint / Note</label>
+                                                            <textarea
+                                                                value={draft.hint}
+                                                                onChange={(e) => handleUpdateAIDraft(draft.id, 'hint', e.target.value)}
+                                                                className="form-input"
+                                                                rows={3}
+                                                                placeholder="Optional context from AI generation..."
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Question Field */}
                                 <div className="form-group">
@@ -343,7 +498,10 @@ export default function TeacherDeckView() {
                                 <div className="flex gap-3 mt-6">
                                     <button
                                         type="button"
-                                        onClick={() => setShowCreateCardModal(false)}
+                                        onClick={() => {
+                                            setShowCreateCardModal(false)
+                                            setAIDraftCards([])
+                                        }}
                                         className="btn-ghost flex-1"
                                     >
                                         Cancel

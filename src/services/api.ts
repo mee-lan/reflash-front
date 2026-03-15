@@ -30,6 +30,12 @@ type BackendDeck = {
   deckDescription?: string
 }
 
+type BackendAICard = {
+  front?: string
+  back?: string
+  additionalContext?: string
+}
+
 function getStoredUser(): AuthUser | null {
   if (typeof window === 'undefined') {
     return null
@@ -330,6 +336,21 @@ export const flashcardAPI = {
     }
 
     throw new Error('Card not found')
+  },
+}
+
+export const aiAPI = {
+  generateFlashcards: async (payload: { text: string; count: number }): Promise<
+    Array<{ question: string; answer: string; hint: string }>
+  > => {
+    const { data } = await apiClient.post<ApiResponse<BackendAICard[]>>('/api/ai/generate-flashcards', payload)
+    const generatedCards = Array.isArray(data.mainBody) ? data.mainBody : []
+
+    return generatedCards.map((card) => ({
+      question: card.front || '',
+      answer: card.back || '',
+      hint: card.additionalContext || '',
+    }))
   },
 }
 
