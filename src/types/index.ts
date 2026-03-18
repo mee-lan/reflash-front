@@ -56,11 +56,19 @@ export interface Deck {
 }
 
 export interface FlashCard {
-  id: number
+  id: number           // = note.noteId, always stable, never null
+  schedulingId: number | null  // = flashcard.id, null for NEW cards
   deckId: number
   front: string
   back: string
-  note?: string
+  note?: string        // = additionalContext
+  tags?: string[]
+  type: 'NEW' | 'LEARNING' | 'REVIEW' | 'RELEARNING'
+  queue: 'NEW' | 'LEARNING' | 'REVIEW'
+  ivl: number
+  factor: number
+  reps: number
+  lapses: number
   difficulty: 'EASY' | 'MEDIUM' | 'HARD'
   nextReviewDate: string
   repetitions: number
