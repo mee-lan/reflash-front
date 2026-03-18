@@ -36,6 +36,37 @@ type BackendAICard = {
   additionalContext?: string
 }
 
+type BackendFlashCardNote = {
+  noteId: number
+  front: string
+  back: string
+  additionalContext?: string
+  tags?: string[]
+  crt: number
+}
+
+type BackendFlashCard = {
+  id: number | null
+  note: BackendFlashCardNote
+  type: string
+  queue: string
+  ivl: number
+  factor: number
+  reps: number
+  lapses: number
+  left: number
+  due: number
+  dirty: boolean
+}
+
+type BackendFlashCardResponse = {
+  flashcards: BackendFlashCard[]
+  deckId: number
+  courseName: string
+  deckName: string
+  crt: number
+}
+
 function getStoredUser(): AuthUser | null {
   if (typeof window === 'undefined') {
     return null
@@ -262,6 +293,7 @@ export const deckAPI = {
     classId: number,
     deckData: { title: string; description?: string }
   ): Promise<Deck> => {
+
     const newDeck: Deck = {
       id: Date.now(),
       title: deckData.title,
@@ -280,8 +312,33 @@ export const deckAPI = {
 }
 
 export const flashcardAPI = {
+
   getDeckCards: async (deckId: number): Promise<FlashCard[]> => {
-    return readCache<FlashCard>(`${FLASHCARD_CACHE_KEY}-${deckId}`)
+    const { data } = await apiClient.get<ApiResponse<BackendFlashCardResponse>>(
+      `/api/student/flashcards?deckId=${deckId}`
+    )
+
+    const flashcards = data.mainBody?.flashcards ?? []
+
+    return flashcards.map((card): FlashCard => ({
+      id: card.note.noteId,
+      schedulingId: card.id,
+      deckId,
+      front: card.note.front,
+      back: card.note.back,
+      note: card.note.additionalContext,
+      tags: card.note.tags ?? [],
+      type: card.type as FlashCard['type'],
+      queue: card.queue as FlashCard['queue'],
+      ivl: card.ivl,
+      factor: card.factor,
+      reps: card.reps,
+      lapses: card.lapses,
+      difficulty: 'MEDIUM',
+      nextReviewDate: new Date(card.due * 1000).toISOString(),
+      repetitions: card.reps,
+      easeFactor: card.factor,
+    }))
   },
 
   createCard: async (
