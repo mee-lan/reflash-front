@@ -8,15 +8,32 @@ const DECK_CACHE_KEY = 'reflash-decks'
 const FLASHCARD_CACHE_KEY = 'reflash-flashcards'
 
 type BackendCourse = {
-  id: number
+  id?: number
+  courseId?: number
+  couresId?: number
   name?: string
   courseName?: string
+  courseDescription?: string
   grade?: string
+  deckCount?: number
+  studentCount?: number
+  teacherNames?: string[]
 }
 
 type BackendDeck = {
-  id: number
-  name: string
+  id?: number
+  name?: string
+  description?: string
+  cardCount?: number
+  deckId?: number
+  deckName?: string
+  deckDescription?: string
+}
+
+type BackendAICard = {
+  front?: string
+  back?: string
+  additionalContext?: string
 }
 
 function getStoredUser(): AuthUser | null {
@@ -98,10 +115,7 @@ apiClient.interceptors.request.use((config) => {
   const role = getStoredUser()?.role
 
   if (role) {
-    config.headers = {
-      ...config.headers,
-      role,
-    }
+    config.headers.set('role', role)
   }
 
   return config
@@ -114,35 +128,44 @@ function getCourseColor(index: number) {
 
 function mapCourseToClass(course: BackendCourse, index: number): Class {
   const user = getStoredUser()
-  const courseName = course.name || course.courseName || `Course ${course.id}`
+  const courseId = course.id ?? course.courseId ?? course.couresId ?? index + 1
+  const courseName = course.name || course.courseName || `Course ${courseId}`
+  const teacherName =
+    user?.role === 'TEACHER'
+      ? getDisplayName(user)
+      : course.teacherNames?.join(', ') || 'Assigned Teacher'
 
   return {
-    id: course.id,
+    id: courseId,
     name: courseName,
     subject: course.grade ? `Grade ${course.grade}` : 'General',
-    description: `${courseName} course`,
+    description: course.courseDescription || `${courseName} course`,
     color: getCourseColor(index),
-    classCode: `COURSE-${course.id}`,
+    classCode: `COURSE-${courseId}`,
     teacher: {
       id: user?.role === 'TEACHER' ? user.id : 0,
-      name: user?.role === 'TEACHER' ? getDisplayName(user) : 'Assigned Teacher',
+      name: teacherName,
     },
-    studentCount: 0,
-    deckCount: 0,
+    studentCount: course.studentCount ?? 0,
+    deckCount: course.deckCount ?? 0,
     createdAt: new Date().toISOString(),
   }
 }
 
 function mapDeckToDeckModel(deck: BackendDeck, courseId: number): Deck {
   const relatedClass = getCachedClasses().find((course) => course.id === courseId)
+  const deckId = deck.deckId ?? deck.id ?? Date.now()
+  const deckTitle = deck.deckName ?? deck.name ?? `Deck ${deckId}`
+  const deckDescription = deck.deckDescription ?? deck.description ?? `${deckTitle} deck`
+  const cardCount = deck.cardCount ?? 0
 
   return {
-    id: deck.id,
-    title: deck.name,
-    description: `${deck.name} deck`,
+    id: deckId,
+    title: deckTitle,
+    description: deckDescription,
     classId: courseId,
     className: relatedClass?.name || `Course ${courseId}`,
-    cardCount: 0,
+    cardCount,
     studiedCount: 0,
     dueCount: 0,
     createdAt: new Date().toISOString(),
@@ -313,6 +336,21 @@ export const flashcardAPI = {
     }
 
     throw new Error('Card not found')
+  },
+}
+
+export const aiAPI = {
+  generateFlashcards: async (payload: { text: string; count: number }): Promise<
+    Array<{ question: string; answer: string; hint: string }>
+  > => {
+    const { data } = await apiClient.post<ApiResponse<BackendAICard[]>>('/api/ai/generate-flashcards', payload)
+    const generatedCards = Array.isArray(data.mainBody) ? data.mainBody : []
+
+    return generatedCards.map((card) => ({
+      question: card.front || '',
+      answer: card.back || '',
+      hint: card.additionalContext || '',
+    }))
   },
 }
 
