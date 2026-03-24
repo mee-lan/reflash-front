@@ -67,6 +67,15 @@ type BackendFlashCardResponse = {
   crt: number
 }
 
+type BackendNote = {
+  noteId: number
+  front: string
+  back: string
+  additionalContext?: string
+  tags?: string[]
+  crt?: number
+}
+
 function getStoredUser(): AuthUser | null {
   if (typeof window === 'undefined') {
     return null
@@ -293,6 +302,26 @@ export const deckAPI = {
     classId: number,
     deckData: { title: string; description?: string }
   ): Promise<Deck> => {
+    const role = getCurrentRole()
+
+    if (role === 'TEACHER') {
+      await apiClient.post('/api/teacher/empty-deck', {
+        deckName: deckData.title,
+        deckDescription: deckData.description || '',
+        courseId: classId,
+      })
+
+      // Refetch decks to get real deckId from backend
+      const { data } = await apiClient.get<ApiResponse<BackendDeck[]>>(
+        getDeckEndpoint('TEACHER', classId)
+      )
+      const deckList = Array.isArray(data.mainBody) ? data.mainBody : []
+      const decks = deckList.map((deck) => mapDeckToDeckModel(deck, classId))
+      cacheDecks(decks)
+
+      // Return the last one — newest
+      return decks[decks.length - 1]
+    }
 
     const newDeck: Deck = {
       id: Date.now(),
@@ -314,6 +343,36 @@ export const deckAPI = {
 export const flashcardAPI = {
 
   getDeckCards: async (deckId: number): Promise<FlashCard[]> => {
+    const role = getCurrentRole()
+
+    if (role === 'TEACHER') {
+      const { data } = await apiClient.get<ApiResponse<BackendNote[]>>(
+        `/api/teacher/notes-by-deck?deckId=${deckId}`
+      )
+
+      const notes = Array.isArray(data.mainBody) ? data.mainBody : []
+
+      return notes.map((note): FlashCard => ({
+        id: note.noteId,
+        schedulingId: null,
+        deckId,
+        front: note.front,
+        back: note.back,
+        note: note.additionalContext,
+        tags: note.tags ?? [],
+        type: 'NEW',
+        queue: 'NEW',
+        ivl: 0,
+        factor: 0,
+        reps: 0,
+        lapses: 0,
+        difficulty: 'MEDIUM',
+        nextReviewDate: new Date().toISOString(),
+        repetitions: 0,
+        easeFactor: 0,
+      }))
+    }
+
     const { data } = await apiClient.get<ApiResponse<BackendFlashCardResponse>>(
       `/api/student/flashcards?deckId=${deckId}`
     )
@@ -345,23 +404,69 @@ export const flashcardAPI = {
     deckId: number,
     cardData: { front: string; back: string; note?: string }
   ): Promise<FlashCard> => {
+    const role = getCurrentRole()
+
+    if (role === 'TEACHER') {
+      await apiClient.post('/api/teacher/note', {
+        deckId,
+        front: cardData.front,
+        back: cardData.back,
+        additionalContext: cardData.note,
+      })
+
+      // Refetch notes to get the real noteId from backend
+      const { data } = await apiClient.get<ApiResponse<BackendNote[]>>(
+        `/api/teacher/notes-by-deck?deckId=${deckId}`
+      )
+      const notes = Array.isArray(data.mainBody) ? data.mainBody : []
+      const created = notes[notes.length - 1] // last note is the newest
+
+      return {
+        id: created.noteId,
+        schedulingId: null,
+        deckId,
+        front: created.front,
+        back: created.back,
+        note: created.additionalContext,
+        tags: created.tags ?? [],
+        type: 'NEW',
+        queue: 'NEW',
+        ivl: 0,
+        factor: 0,
+        reps: 0,
+        lapses: 0,
+        difficulty: 'MEDIUM',
+        nextReviewDate: new Date().toISOString(),
+        repetitions: 0,
+        easeFactor: 0,
+      }
+    }
+
+    // Student/cache path (unchanged)
     const newCard: FlashCard = {
       id: Date.now(),
+      schedulingId: null,
       deckId,
       front: cardData.front,
       back: cardData.back,
       note: cardData.note,
+      tags: [],
+      type: 'NEW',
+      queue: 'NEW',
+      ivl: 0,
+      factor: 0,
+      reps: 0,
+      lapses: 0,
       difficulty: 'MEDIUM',
       nextReviewDate: new Date().toISOString(),
       repetitions: 0,
-      easeFactor: 2.5,
+      easeFactor: 0,
     }
 
     const cacheKey = `${FLASHCARD_CACHE_KEY}-${deckId}`
     writeCache(cacheKey, [...readCache<FlashCard>(cacheKey), newCard])
     return newCard
   },
-
   rateCard: async (
     _cardId: number,
     _difficulty: 'EASY' | 'MEDIUM' | 'HARD'
@@ -371,8 +476,54 @@ export const flashcardAPI = {
 
   updateCard: async (
     cardId: number,
+    deckId: number,
     cardData: { front: string; back: string; note?: string }
   ): Promise<FlashCard> => {
+    const role = getCurrentRole()
+
+    if (role === 'TEACHER') {
+      const { data } = await apiClient.get<ApiResponse<BackendNote[]>>(
+        `/api/teacher/notes-by-deck?deckId=${deckId}`
+      )
+      const notes = Array.isArray(data.mainBody) ? data.mainBody : []
+
+      const updatedNotes = notes.map((n) =>
+        n.noteId === cardId
+          ? { noteId: n.noteId, front: cardData.front, back: cardData.back, additionalContext: cardData.note, tags: n.tags }
+          : { noteId: n.noteId, front: n.front, back: n.back, additionalContext: n.additionalContext, tags: n.tags }
+      )
+
+      const deck = getCachedDecks().find((d) => d.id === deckId)
+
+      await apiClient.put('/api/teacher/edit-deck', {
+        deckId,
+        deckName: deck?.title,
+        deckDescription: deck?.description,
+        notes: updatedNotes,
+      })
+
+      return {
+        id: cardId,
+        schedulingId: null,
+        deckId,
+        front: cardData.front,
+        back: cardData.back,
+        note: cardData.note,
+        tags: [],
+        type: 'NEW',
+        queue: 'NEW',
+        ivl: 0,
+        factor: 0,
+        reps: 0,
+        lapses: 0,
+        difficulty: 'MEDIUM',
+        nextReviewDate: new Date().toISOString(),
+        repetitions: 0,
+        easeFactor: 0,
+      }
+    }
+
+    // Cache path for non-teacher
     const allDecks = getCachedDecks()
 
     for (const deck of allDecks) {
