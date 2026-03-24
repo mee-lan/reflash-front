@@ -8,7 +8,7 @@ import { useRef } from 'react'
 
 interface FlashCardProps {
     card: FlashCardType
-    onRate: (difficulty: 'EASY' | 'MEDIUM' | 'HARD') => void
+    onRate: (ease: 1 | 2 | 3 | 4) => void
 }
 
 export default function FlashCard({ card, onRate }: FlashCardProps) {
@@ -150,56 +150,47 @@ export default function FlashCard({ card, onRate }: FlashCardProps) {
 
 
                     {/* Rating Buttons (show only when flipped) */}
-                    {
-                        isFlipped && (
-                            <div className="mt-6 animate-slide-up">
-                                <p className="text-center text-sm text-neutral-600 mb-3">
-                                    How well did you know this?
-                                </p>
+                    {isFlipped && (
+                        <div className="mt-6 animate-slide-up">
+                            <p className="text-center text-sm text-neutral-600 mb-3">
+                                How well did you know this?
+                            </p>
 
-                                <div className="grid grid-cols-3 gap-3">
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            onRate('HARD')
-                                            setIsFlipped(false)
-                                        }}
-                                        className="flex flex-col items-center gap-2 p-4 border-2 border-red-200 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
-                                    >
-                                        <span className="text-2xl">😰</span>
-                                        <span className="text-sm font-medium text-red-900">Again</span>
-                                        <span className="text-xs text-red-700">&lt;1 min</span>
-                                    </button>
+                            <div className="grid grid-cols-4 gap-3">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onRate(1); setIsFlipped(false) }}
+                                    className="flex flex-col items-center gap-2 p-4 border-2 border-red-200 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                                >
+                                    <span className="text-2xl">😰</span>
+                                    <span className="text-sm font-medium text-red-900">Again</span>
+                                </button>
 
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            onRate('MEDIUM')
-                                            setIsFlipped(false)
-                                        }}
-                                        className="flex flex-col items-center gap-2 p-4 border-2 border-yellow-200 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors"
-                                    >
-                                        <span className="text-2xl">🤔</span>
-                                        <span className="text-sm font-medium text-yellow-900">Good</span>
-                                        <span className="text-xs text-yellow-700">3 days</span>
-                                    </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onRate(2); setIsFlipped(false) }}
+                                    className="flex flex-col items-center gap-2 p-4 border-2 border-orange-200 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
+                                >
+                                    <span className="text-2xl">😓</span>
+                                    <span className="text-sm font-medium text-orange-900">Hard</span>
+                                </button>
 
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            onRate('EASY')
-                                            setIsFlipped(false)
-                                        }}
-                                        className="flex flex-col items-center gap-2 p-4 border-2 border-green-200 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
-                                    >
-                                        <span className="text-2xl">😎</span>
-                                        <span className="text-sm font-medium text-green-900">Easy</span>
-                                        <span className="text-xs text-green-700">7 days</span>
-                                    </button>
-                                </div>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onRate(3); setIsFlipped(false) }}
+                                    className="flex flex-col items-center gap-2 p-4 border-2 border-yellow-200 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors"
+                                >
+                                    <span className="text-2xl">🤔</span>
+                                    <span className="text-sm font-medium text-yellow-900">Good</span>
+                                </button>
+
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onRate(4); setIsFlipped(false) }}
+                                    className="flex flex-col items-center gap-2 p-4 border-2 border-green-200 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+                                >
+                                    <span className="text-2xl">😎</span>
+                                    <span className="text-sm font-medium text-green-900">Easy</span>
+                                </button>
                             </div>
-                        )
-                    }
+                        </div>
+                    )}
 
                     {/* Hint */}
                     {
