@@ -97,7 +97,7 @@ export default function TeacherDeckView() {
 
         try {
             // Update card via API
-            await flashcardAPI.updateCard(selectedCard.id, editFormData)
+            await flashcardAPI.updateCard(selectedCard.id,Number(deckId), editFormData)
 
             // Update local state
             setCards(cards.map(c =>
