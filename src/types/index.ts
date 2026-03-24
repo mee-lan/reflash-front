@@ -64,13 +64,12 @@ export interface FlashCard {
   note?: string        // = additionalContext
   tags?: string[]
   type: 'NEW' | 'LEARNING' | 'REVIEW' | 'RELEARNING'
-  queue: 'NEW' | 'LEARNING' | 'REVIEW'
+  queue: 'NEW' | 'LEARNING' | 'REVIEW' | 'SUSPENDED'
   ivl: number
   factor: number
   reps: number
   lapses: number
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD'
-  nextReviewDate: string
-  repetitions: number
-  easeFactor: number
+  left: number
+  due: number
+  dirty?: boolean
 }

@@ -1,32 +1,53 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { Deck, FlashCard as FlashCardType } from "../../types";
 import { useNavigate, useParams, Link } from "react-router-dom";
 
 import { FlashCard } from "../../components";
 import { deckAPI, flashcardAPI } from "../../services/api";
+import { Scheduler } from "../../services/scheduler";
 
 export default function DeckStudy() {
     const [deck, setDeck] = useState<Deck | null>(null)
     const { deckId } = useParams<{ deckId: string }>()
     const navigate = useNavigate()
     const [cards, setCards] = useState<FlashCardType[]>([])
-    const [currentIndex, setCurrentIndex] = useState(0)
+    
+    // Scheduler state
+    const schedulerRef = useRef<Scheduler | null>(null)
+    const [currentCard, setCurrentCard] = useState<FlashCardType | null>(null)
+    const [reviewedCount, setReviewedCount] = useState(0)
+
     const [loading, setLoading] = useState(true)
     const [studyComplete, setStudyComplete] = useState(false)
-
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true)
 
-                const [deck, cards] = await Promise.all([
+                const [fetchedDeck, fetchedCards] = await Promise.all([
                     deckAPI.getDeck(Number(deckId)),
                     flashcardAPI.getDeckCards(Number(deckId))
                 ])
 
-                setDeck(deck)
-                setCards(cards)
+                setDeck(fetchedDeck)
+                setCards(fetchedCards)
+
+                if (fetchedCards.length > 0) {
+                    const deckCreatedAtEpoch = Math.floor(new Date(fetchedDeck.createdAt).getTime() / 1000)
+                    const sched = new Scheduler(fetchedDeck.id, deckCreatedAtEpoch, fetchedCards, 0)
+                    schedulerRef.current = sched
+                    
+                    const firstCard = sched.getCard()
+                    if (firstCard) {
+                        setCurrentCard(firstCard)
+                    } else {
+                        setStudyComplete(true)
+                    }
+                } else {
+                    setStudyComplete(true)
+                }
+
             }
             catch (error) {
                 console.error("Failed to fetch deck data", error)
@@ -39,17 +60,21 @@ export default function DeckStudy() {
         fetchData()
     }, [deckId])
 
-    const handleRating = async (difficulty: 'EASY' | 'MEDIUM' | 'HARD') => {
+    const handleRating = async (ease: 1 | 2 | 3 | 4) => {
+        if (!schedulerRef.current || !currentCard || !deck) return;
 
         try {
-            await flashcardAPI.rateCard(cards[currentIndex].id, difficulty)
-            console.log(`Card ${cards[currentIndex].id} rated as ${difficulty}`)
+            schedulerRef.current.answerCard(currentCard, ease)
+            setReviewedCount(prev => prev + 1)
+            console.log(`Card ${currentCard.id} rated with ease ${ease}`)
 
-            // Move to next card or complete
-            if (currentIndex < cards.length - 1) {
-                setCurrentIndex(currentIndex + 1)
+            const nextCard = schedulerRef.current.getCard()
+            if (nextCard) {
+                setCurrentCard(nextCard)
             } else {
                 setStudyComplete(true)
+                // Sync all updated cards to backend
+                await flashcardAPI.syncCards(deck.id, cards)
             }
         } catch (error) {
             console.error('Failed to rate card:', error)
@@ -89,19 +114,10 @@ export default function DeckStudy() {
 
                         <h2 className="mb-2">Study Session Complete! 🎉</h2>
                         <p className="text-neutral-600 mb-6">
-                            You've reviewed all {cards.length} cards in this deck.
+                            You've reviewed {reviewedCount} cards in this deck for this session.
                         </p>
 
                         <div className="space-y-3">
-                            <button
-                                onClick={() => {
-                                    setCurrentIndex(0)
-                                    setStudyComplete(false)
-                                }}
-                                className="btn-primary w-full"
-                            >
-                                Study Again
-                            </button>
                             <button
                                 onClick={() => navigate(`/class/${deck.classId}`)}
                                 className="btn-ghost w-full"
@@ -115,8 +131,8 @@ export default function DeckStudy() {
         )
     }
 
-    const currentCard = cards[currentIndex]
-    const progress = ((currentIndex + 1) / cards.length) * 100
+    const uncapProgress = (reviewedCount / cards.length) * 100
+    const progress = Math.min(100, uncapProgress || 0)
 
     return (
         <div className="min-h-screen bg-neutral-50">
@@ -142,10 +158,10 @@ export default function DeckStudy() {
 
                         <div className="text-right">
                             <p className="text-sm font-medium text-neutral-900">
-                                Card {currentIndex + 1} of {cards.length}
+                                Reviews: {reviewedCount}
                             </p>
                             <p className="text-xs text-neutral-600">
-                                {Math.round(progress)}% complete
+                                Session progress
                             </p>
                         </div>
                     </div>
@@ -162,10 +178,12 @@ export default function DeckStudy() {
 
             {/* Flashcard Area */}
             <div className="container-custom py-12">
-                <FlashCard card={currentCard} onRate={handleRating} />
+                {currentCard ? (
+                    <FlashCard card={currentCard} onRate={handleRating} />
+                ) : (
+                    <div className="text-center py-12">No cards due for review!</div>
+                )}
             </div>
         </div>
     )
-
-
 }

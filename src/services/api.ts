@@ -1,6 +1,7 @@
 import axios from 'axios'
 import type { ApiResponse, AuthUser, Class, Deck, FlashCard, UserRole } from '../types'
 import { AUTH_STORAGE_KEY } from '../store/authSlice'
+import { Scheduler } from './scheduler'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 const CLASS_CACHE_KEY = 'reflash-classes'
@@ -366,10 +367,9 @@ export const flashcardAPI = {
         factor: 0,
         reps: 0,
         lapses: 0,
-        difficulty: 'MEDIUM',
-        nextReviewDate: new Date().toISOString(),
-        repetitions: 0,
-        easeFactor: 0,
+        left: 0,
+        due: Math.floor(Date.now() / 1000),
+        dirty: false,
       }))
     }
 
@@ -393,10 +393,9 @@ export const flashcardAPI = {
       factor: card.factor,
       reps: card.reps,
       lapses: card.lapses,
-      difficulty: 'MEDIUM',
-      nextReviewDate: new Date(card.due * 1000).toISOString(),
-      repetitions: card.reps,
-      easeFactor: card.factor,
+      left: card.left,
+      due: card.due,
+      dirty: card.dirty,
     }))
   },
 
@@ -435,10 +434,9 @@ export const flashcardAPI = {
         factor: 0,
         reps: 0,
         lapses: 0,
-        difficulty: 'MEDIUM',
-        nextReviewDate: new Date().toISOString(),
-        repetitions: 0,
-        easeFactor: 0,
+        left: 0,
+        due: Math.floor(Date.now() / 1000),
+        dirty: false,
       }
     }
 
@@ -457,21 +455,46 @@ export const flashcardAPI = {
       factor: 0,
       reps: 0,
       lapses: 0,
-      difficulty: 'MEDIUM',
-      nextReviewDate: new Date().toISOString(),
-      repetitions: 0,
-      easeFactor: 0,
+      left: 0,
+      due: Math.floor(Date.now() / 1000),
+      dirty: false,
     }
 
     const cacheKey = `${FLASHCARD_CACHE_KEY}-${deckId}`
     writeCache(cacheKey, [...readCache<FlashCard>(cacheKey), newCard])
     return newCard
   },
-  rateCard: async (
-    _cardId: number,
-    _difficulty: 'EASY' | 'MEDIUM' | 'HARD'
-  ): Promise<void> => {
-    return
+
+  syncCards: async (deckId: number, cards: FlashCard[]): Promise<void> => {
+    const role = getCurrentRole()
+    if (role === 'TEACHER') return
+
+    const dtos = cards.map(c => ({
+      id: c.schedulingId,
+      note: {
+         noteId: c.id,
+         front: c.front,
+         back: c.back,
+         additionalContext: c.note,
+         tags: c.tags
+      },
+      type: c.type,
+      queue: c.queue,
+      ivl: c.ivl,
+      factor: c.factor,
+      reps: c.reps,
+      lapses: c.lapses,
+      left: c.left,
+      due: c.due,
+      dirty: c.dirty
+    }))
+
+    // Save back to cache
+    const cacheKey = `${FLASHCARD_CACHE_KEY}-${deckId}`
+    writeCache(cacheKey, cards)
+
+    // Sync to backend
+    await apiClient.put(`/api/student/flashcards?deckId=${deckId}`, dtos)
   },
 
   updateCard: async (
@@ -516,10 +539,9 @@ export const flashcardAPI = {
         factor: 0,
         reps: 0,
         lapses: 0,
-        difficulty: 'MEDIUM',
-        nextReviewDate: new Date().toISOString(),
-        repetitions: 0,
-        easeFactor: 0,
+        left: 0,
+        due: Math.floor(Date.now() / 1000),
+        dirty: false,
       }
     }
 
