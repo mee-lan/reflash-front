@@ -393,7 +393,7 @@ export const flashcardAPI = {
 
     console.log("Fetched flashcards for student:", flashcards)
 
-      
+
 
     const crt = data.mainBody?.crt ?? 0
 
@@ -565,26 +565,20 @@ export const flashcardAPI = {
     }
 
     // Cache path for non-teacher
-    const allDecks = getCachedDecks()
+    const cards = readCache<FlashCard>(getClassCacheKey())
+    const targetCard = cards.find((card) => card.id === cardId)
 
-    for (const deck of allDecks) {
-      
-      const cards = readCache<FlashCard>(getClassCacheKey())
-      const targetCard = cards.find((card) => card.id === cardId)
-
-      if (!targetCard) {
-        continue
-      }
-
-      const updatedCard = { ...targetCard, ...cardData }
-      writeCache(
-        getClassCacheKey(),
-        cards.map((card) => (card.id === cardId ? updatedCard : card))
-      )
-      return updatedCard
+    if (!targetCard) {
+      throw new Error('Card not found')
     }
 
-    throw new Error('Card not found')
+    const updatedCard = { ...targetCard, ...cardData }
+    writeCache(
+      getClassCacheKey(),
+      cards.map((card) => (card.id === cardId ? updatedCard : card))
+    )
+    return updatedCard
+
   },
 }
 
