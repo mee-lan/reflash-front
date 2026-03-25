@@ -4,9 +4,16 @@ import { AUTH_STORAGE_KEY } from '../store/authSlice'
 import { Scheduler } from './scheduler'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
-const CLASS_CACHE_KEY = 'reflash-classes'
-const DECK_CACHE_KEY = 'reflash-decks'
-const FLASHCARD_CACHE_KEY = 'reflash-flashcards'
+
+function getDeckCacheKey(): string {
+  const user = getStoredUser()
+  return `reflash-decks-${user?.id ?? 'anonymous'}`
+}
+
+function getClassCacheKey(): string {
+  const user = getStoredUser()
+  return `reflash-classes-${user?.id ?? 'anonymous'}`
+}
 
 type BackendCourse = {
   id?: number
@@ -124,24 +131,24 @@ function writeCache<T>(key: string, value: T[]) {
 }
 
 function cacheClasses(classes: Class[]) {
-  writeCache(CLASS_CACHE_KEY, classes)
+  writeCache(getClassCacheKey(), classes)
 }
 
 function getCachedClasses() {
-  return readCache<Class>(CLASS_CACHE_KEY)
+  return readCache<Class>(getClassCacheKey())
 }
 
 function cacheDecks(decks: Deck[]) {
-  const existingDecks = readCache<Deck>(DECK_CACHE_KEY)
+  const existingDecks = readCache<Deck>(getDeckCacheKey())
   const mergedDecks = [
     ...existingDecks.filter((existingDeck) => !decks.some((deck) => deck.id === existingDeck.id)),
     ...decks,
   ]
-  writeCache(DECK_CACHE_KEY, mergedDecks)
+  writeCache(getDeckCacheKey(), mergedDecks)
 }
 
 function getCachedDecks() {
-  return readCache<Deck>(DECK_CACHE_KEY)
+  return readCache<Deck>(getDeckCacheKey())
 }
 
 const apiClient = axios.create({
@@ -210,6 +217,7 @@ function mapDeckToDeckModel(deck: BackendDeck, courseId: number): Deck {
     studiedCount: 0,
     dueCount: 0,
     createdAt: new Date().toISOString(),
+    crt: 0
   }
 }
 
@@ -334,6 +342,8 @@ export const deckAPI = {
       studiedCount: 0,
       dueCount: 0,
       createdAt: new Date().toISOString(),
+      //initialized  0 for now, will be updated with real crt when cards are fetched
+      crt: 0
     }
 
     cacheDecks([...getCachedDecks(), newDeck])
@@ -378,6 +388,15 @@ export const flashcardAPI = {
     )
 
     const flashcards = data.mainBody?.flashcards ?? []
+
+    const crt = data.mainBody?.crt ?? 0
+
+    // Update cached deck with real crt
+    const cachedDecks = getCachedDecks()
+    const updatedDecks = cachedDecks.map(d =>
+      d.id === deckId ? { ...d, crt } : d
+    )
+    writeCache(getDeckCacheKey(), updatedDecks)
 
     return flashcards.map((card): FlashCard => ({
       id: card.note.noteId,
@@ -460,8 +479,6 @@ export const flashcardAPI = {
       dirty: false,
     }
 
-    const cacheKey = `${FLASHCARD_CACHE_KEY}-${deckId}`
-    writeCache(cacheKey, [...readCache<FlashCard>(cacheKey), newCard])
     return newCard
   },
 
@@ -472,11 +489,11 @@ export const flashcardAPI = {
     const dtos = cards.map(c => ({
       id: c.schedulingId,
       note: {
-         noteId: c.id,
-         front: c.front,
-         back: c.back,
-         additionalContext: c.note,
-         tags: c.tags
+        noteId: c.id,
+        front: c.front,
+        back: c.back,
+        additionalContext: c.note,
+        tags: c.tags
       },
       type: c.type,
       queue: c.queue,
@@ -488,10 +505,6 @@ export const flashcardAPI = {
       due: c.due,
       dirty: c.dirty
     }))
-
-    // Save back to cache
-    const cacheKey = `${FLASHCARD_CACHE_KEY}-${deckId}`
-    writeCache(cacheKey, cards)
 
     // Sync to backend
     await apiClient.put(`/api/student/flashcards?deckId=${deckId}`, dtos)
@@ -549,8 +562,8 @@ export const flashcardAPI = {
     const allDecks = getCachedDecks()
 
     for (const deck of allDecks) {
-      const cacheKey = `${FLASHCARD_CACHE_KEY}-${deck.id}`
-      const cards = readCache<FlashCard>(cacheKey)
+      
+      const cards = readCache<FlashCard>(getClassCacheKey())
       const targetCard = cards.find((card) => card.id === cardId)
 
       if (!targetCard) {
@@ -559,7 +572,7 @@ export const flashcardAPI = {
 
       const updatedCard = { ...targetCard, ...cardData }
       writeCache(
-        cacheKey,
+        getClassCacheKey(),
         cards.map((card) => (card.id === cardId ? updatedCard : card))
       )
       return updatedCard

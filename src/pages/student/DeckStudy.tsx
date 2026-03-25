@@ -11,7 +11,7 @@ export default function DeckStudy() {
     const { deckId } = useParams<{ deckId: string }>()
     const navigate = useNavigate()
     const [cards, setCards] = useState<FlashCardType[]>([])
-    
+
     // Scheduler state
     const schedulerRef = useRef<Scheduler | null>(null)
     const [currentCard, setCurrentCard] = useState<FlashCardType | null>(null)
@@ -25,19 +25,17 @@ export default function DeckStudy() {
             try {
                 setLoading(true)
 
-                const [fetchedDeck, fetchedCards] = await Promise.all([
-                    deckAPI.getDeck(Number(deckId)),
-                    flashcardAPI.getDeckCards(Number(deckId))
-                ])
+                const fetchedCards = await flashcardAPI.getDeckCards(Number(deckId))
+                const fetchedDeck = await deckAPI.getDeck(Number(deckId))  // now has real crt
 
                 setDeck(fetchedDeck)
                 setCards(fetchedCards)
 
                 if (fetchedCards.length > 0) {
                     const deckCreatedAtEpoch = Math.floor(new Date(fetchedDeck.createdAt).getTime() / 1000)
-                    const sched = new Scheduler(fetchedDeck.id, deckCreatedAtEpoch, fetchedCards, 0)
+                    const sched = new Scheduler(fetchedDeck.id, fetchedDeck.crt, fetchedCards, 0)
                     schedulerRef.current = sched
-                    
+
                     const firstCard = sched.getCard()
                     if (firstCard) {
                         setCurrentCard(firstCard)
