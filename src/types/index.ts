@@ -52,7 +52,8 @@ export interface Deck {
   cardCount: number
   studiedCount: number
   dueCount: number
-  createdAt: string
+  createdAt: string,
+  crt: number          // epoch seconds from backend
 }
 
 export interface FlashCard {
