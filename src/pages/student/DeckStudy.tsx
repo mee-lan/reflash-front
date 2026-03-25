@@ -182,7 +182,7 @@ export default function DeckStudy() {
                             className="bg-primary-500 h-2 rounded-full transition-all duration-300"
                             style={{ width: `${progress}%` }}
                         />
-                    </div>
+                    </div>             
                 </div>
             </div>
 

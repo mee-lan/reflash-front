@@ -6,7 +6,7 @@ interface DeckCardProps {
 }
 
 export default function DeckCard({ deck }: DeckCardProps) {
-    const progress = deck.cardCount > 0 ? (deck.studiedCount / deck.cardCount) * 100 : 0
+    // const progress = deck.cardCount > 0 ? (deck.studiedCount / deck.cardCount) * 100 : 0
 
 
     return (
@@ -36,7 +36,7 @@ export default function DeckCard({ deck }: DeckCardProps) {
                     </div>
 
                     {/* Progress Bar */}
-                    <div className="mb-4">
+                    {/* <div className="mb-4">
                         <div className="flex items-center justify-between text-xs text-neutral-600 mb-1">
                             <span>Progress</span>
                             <span>{deck.studiedCount} / {deck.cardCount} cards</span>
@@ -47,7 +47,7 @@ export default function DeckCard({ deck }: DeckCardProps) {
                                 style={{ width: `${progress}%` }}
                             />
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* Footer */}
                     <div className="flex items-center justify-between text-sm">
