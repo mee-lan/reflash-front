@@ -363,6 +363,8 @@ export const flashcardAPI = {
 
       const notes = Array.isArray(data.mainBody) ? data.mainBody : []
 
+      console.log("Fetched notes for teacher:", notes)
+
       return notes.map((note): FlashCard => ({
         id: note.noteId,
         schedulingId: null,
@@ -388,6 +390,10 @@ export const flashcardAPI = {
     )
 
     const flashcards = data.mainBody?.flashcards ?? []
+
+    console.log("Fetched flashcards for student:", flashcards)
+
+      
 
     const crt = data.mainBody?.crt ?? 0
 

@@ -21,6 +21,15 @@ export default function DeckStudy() {
     const [studyComplete, setStudyComplete] = useState(false)
 
     useEffect(() => {
+
+        // Reset state when deck changes
+        schedulerRef.current = null
+        setCurrentCard(null)
+        setReviewedCount(0)
+        setStudyComplete(false)
+        setCards([])
+        setDeck(null)
+
         const fetchData = async () => {
             try {
                 setLoading(true)
@@ -30,6 +39,9 @@ export default function DeckStudy() {
 
                 setDeck(fetchedDeck)
                 setCards(fetchedCards)
+
+                console.log("Fetched deck:", fetchedDeck)
+                console.log("Fetched cards:", fetchedCards)
 
                 if (fetchedCards.length > 0) {
                     const deckCreatedAtEpoch = Math.floor(new Date(fetchedDeck.createdAt).getTime() / 1000)
