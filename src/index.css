@@ -514,3 +514,11 @@
 .markdown-preview-image-remove:hover {
   background: rgba(220, 38, 38, 0.92);
 }
+
+.markdown-inline-editor-image {
+  width: min(30%, 12rem);
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  object-fit: contain;
+}

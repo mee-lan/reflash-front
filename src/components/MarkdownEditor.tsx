@@ -1,5 +1,6 @@
 import 'easymde/dist/easymde.min.css'
 import EasyMDE from 'easymde'
+import CodeMirror from 'codemirror'
 import SimpleMDE from 'react-simplemde-editor'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Options } from 'easymde'
@@ -69,6 +70,8 @@ function decoratePreviewImages(html: string, plainText: string, resolveImageSrc?
 export default function MarkdownEditor({ value, onChange, onImageUpload, onImageRemove, resolveImageSrc }: MarkdownEditorProps) {
     const fileInputRef = useRef<HTMLInputElement | null>(null)
     const pendingEditorRef = useRef<any>(null)
+    const codemirrorRef = useRef<CodeMirror.Editor | null>(null)
+    const imageMarkersRef = useRef<Array<CodeMirror.TextMarker & { __markdownImageSource?: string }>>([])
     const valueRef = useRef(value)
     const onChangeRef = useRef(onChange)
     const onImageUploadRef = useRef(onImageUpload)
@@ -117,6 +120,106 @@ export default function MarkdownEditor({ value, onChange, onImageUpload, onImage
         onChangeRef.current(updatedValue)
         onImageRemoveRef.current?.(imageSource)
     }
+
+    useEffect(() => {
+        const codemirror = codemirrorRef.current
+
+        if (!codemirror) {
+            return
+        }
+
+        imageMarkersRef.current.forEach((marker) => marker.clear())
+        imageMarkersRef.current = []
+
+        const imageMatches = Array.from(value.matchAll(/!\[[^\]]*]\(([^)\s]+)(?:\s+"[^"]*")?\)/g))
+
+        for (const match of imageMatches) {
+            const rawMarkdown = match[0]
+            const imageSource = match[1]
+            const startIndex = match.index ?? -1
+
+            if (startIndex < 0) {
+                continue
+            }
+
+            const endIndex = startIndex + rawMarkdown.length
+            const from = codemirror.posFromIndex(startIndex)
+            const to = codemirror.posFromIndex(endIndex)
+            const imageNode = document.createElement('img')
+
+            imageNode.src = resolveImageSrcRef.current ? resolveImageSrcRef.current(imageSource) : imageSource
+            imageNode.alt = ''
+            imageNode.className = 'markdown-inline-editor-image'
+
+            const marker = codemirror.markText(from, to, {
+                replacedWith: imageNode,
+                atomic: true,
+                clearOnEnter: false,
+                handleMouseEvents: true,
+            }) as CodeMirror.TextMarker & { __markdownImageSource?: string }
+
+            marker.__markdownImageSource = imageSource
+            imageMarkersRef.current.push(marker)
+        }
+    }, [value])
+
+    useEffect(() => {
+        const codemirror = codemirrorRef.current
+
+        if (!codemirror) {
+            return
+        }
+
+        const removeImageMarkerNearCursor = (direction: 'backward' | 'forward') => {
+            const selection = codemirror.getDoc().listSelections?.()
+
+            if (selection && selection.some((range) => range.anchor.line !== range.head.line || range.anchor.ch !== range.head.ch)) {
+                return CodeMirror.Pass
+            }
+
+            const cursor = codemirror.getCursor()
+
+            for (const marker of imageMarkersRef.current) {
+                const range = marker.find()
+
+                if (!range || !('from' in range) || !('to' in range)) {
+                    continue
+                }
+
+                const isBackwardMatch =
+                    direction === 'backward' &&
+                    range.to.line === cursor.line &&
+                    range.to.ch === cursor.ch
+                const isForwardMatch =
+                    direction === 'forward' &&
+                    range.from.line === cursor.line &&
+                    range.from.ch === cursor.ch
+
+                if (!isBackwardMatch && !isForwardMatch) {
+                    continue
+                }
+
+                codemirror.replaceRange('', range.from, range.to)
+                if (marker.__markdownImageSource) {
+                    onImageRemoveRef.current?.(marker.__markdownImageSource)
+                }
+                return
+            }
+
+            return CodeMirror.Pass
+        }
+
+        const keyMap = {
+            Backspace: () => removeImageMarkerNearCursor('backward'),
+            Delete: () => removeImageMarkerNearCursor('forward'),
+        }
+
+        codemirror.addKeyMap(keyMap)
+
+        return () => {
+            codemirror.removeKeyMap(keyMap)
+        }
+    }, [])
 
     const handleImageSelection = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = event.target.files?.[0]
@@ -213,6 +316,9 @@ export default function MarkdownEditor({ value, onChange, onImageUpload, onImage
                 value={value}
                 onChange={onChange}
                 options={options}
+                getCodemirrorInstance={(instance) => {
+                    codemirrorRef.current = instance
+                }}
             />
             {isUploadingImage && (
                 <div className="border-t border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-600">
