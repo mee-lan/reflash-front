@@ -11,8 +11,16 @@ export default function Sidebar(){
         ? '/admin/dashboard'
         : '/dashboard'
     
-    const isActive = (path: string) => {
-        return location.pathname === path || location.pathname.startsWith(path)
+    const isActive = (item: { to: string, label: string }) => {
+        if (item.label === 'Dashboard') {
+            return location.pathname === item.to
+        }
+        if (item.label === 'My Classes') {
+            const classPrefix = user?.role === 'TEACHER' ? '/teacher/class' : '/class'
+            const deckPrefix = user?.role === 'TEACHER' ? '/teacher/deck' : '/study'
+            return location.pathname.startsWith(classPrefix) || location.pathname.startsWith(deckPrefix)
+        }
+        return location.pathname === item.to || location.pathname.startsWith(item.to + '/')
     }
 
     const navigationItems = user?.role === 'ADMINISTRATOR'
@@ -100,7 +108,7 @@ export default function Sidebar(){
               <Link
                 to={item.to}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive(item.to)
+                  isActive(item)
                     ? 'bg-primary-50 text-primary-600 font-medium'
                     : 'text-neutral-600 hover:bg-neutral-50'
                 }`}
