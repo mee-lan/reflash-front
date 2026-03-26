@@ -9,6 +9,8 @@ export default function Header() {
     const dispatch = useDispatch<AppDispatch>()
     const user = useSelector((state: RootState) => state.auth.user)
     const [showUserMenu, setShowUserMenu] = useState(false)
+    const [showNotifications, setShowNotifications] = useState(false)
+    const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true)
 
     const displayName = user ? `${user.firstName} ${user.lastName}` : 'User'
     const subtitle = user?.role === 'TEACHER'
@@ -63,18 +65,47 @@ export default function Header() {
                     {/* Right Side - Notifications & User */}
                     <div className="flex items-center gap-4 ml-6">
                         {/* Notifications */}
-                        <button className="relative p-2 text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                            </svg>
-                            {/* Notification Badge */}
-                            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                        </button>
+                        <div className="relative">
+                            <button 
+                                onClick={() => {
+                                    setShowNotifications(!showNotifications)
+                                    setHasUnreadNotifications(false)
+                                    if (showUserMenu) setShowUserMenu(false)
+                                }}
+                                className="relative p-2 text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                </svg>
+                                {/* Notification Badge */}
+                                {hasUnreadNotifications && (
+                                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                                )}
+                            </button>
+
+                            {/* Notifications Dropdown */}
+                            {showNotifications && (
+                                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-neutral-200 py-2 animate-slide-down">
+                                    <div className="px-4 py-3 border-b border-neutral-200">
+                                        <h3 className="text-sm font-semibold text-neutral-900">Notifications</h3>
+                                    </div>
+                                    <div className="p-4 text-center">
+                                        <svg className="w-12 h-12 text-neutral-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                        </svg>
+                                        <p className="text-sm text-neutral-500">No new notifications</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                         {/* User Menu */}
                         <div className="relative">
                             <button
-                                onClick={() => setShowUserMenu(!showUserMenu)}
+                                onClick={() => {
+                                    setShowUserMenu(!showUserMenu)
+                                    if (showNotifications) setShowNotifications(false)
+                                }}
                                 className="flex items-center gap-3 p-2 hover:bg-neutral-100 rounded-lg transition-colors"
                             >
                                 <div className="w-8 h-8 bg-primary-500 rounded-full center text-white font-medium">
