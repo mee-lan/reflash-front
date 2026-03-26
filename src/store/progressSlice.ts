@@ -44,7 +44,7 @@ export const fetchProgressStats = createAsyncThunk(
       for (const cls of classes) {
         const decks = await deckAPI.getClassDecks(cls.id)
         for (const deck of decks) {
-          const cards = await flashcardAPI.getDeckCards(deck.id)
+          const cards = await flashcardAPI.getDeckCards(deck.id, true) // Pass true to fetch all cards regardless of due date
           
           // Math for 'today' relative to deck creation
           const deckToday = Math.floor((nowSeconds - (deck.crt || 0)) / 86400)

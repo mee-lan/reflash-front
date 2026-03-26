@@ -1,7 +1,6 @@
 import axios from 'axios'
 import type { ApiResponse, AuthUser, Class, Deck, FlashCard, UserRole } from '../types'
 import { AUTH_STORAGE_KEY } from '../store/authSlice'
-import { Scheduler } from './scheduler'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
@@ -353,7 +352,7 @@ export const deckAPI = {
 
 export const flashcardAPI = {
 
-  getDeckCards: async (deckId: number): Promise<FlashCard[]> => {
+  getDeckCards: async (deckId: number, fetchAll: boolean = false): Promise<FlashCard[]> => {
     const role = getCurrentRole()
 
     if (role === 'TEACHER') {
@@ -385,9 +384,11 @@ export const flashcardAPI = {
       }))
     }
 
-    const { data } = await apiClient.get<ApiResponse<BackendFlashCardResponse>>(
-      `/api/student/flashcards?deckId=${deckId}`
-    )
+    const endpoint = fetchAll 
+      ? `/api/student/flashcards-no-due-date?deckId=${deckId}`
+      : `/api/student/flashcards?deckId=${deckId}`
+
+    const { data } = await apiClient.get<ApiResponse<BackendFlashCardResponse>>(endpoint)
 
     const flashcards = data.mainBody?.flashcards ?? []
 
