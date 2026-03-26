@@ -1,16 +1,25 @@
 import { useParams, Link } from "react-router-dom"
 import { useEffect, useState } from "react"
+import { useDispatch, useSelector } from "react-redux"
 import type { Class, Deck } from "../../types"
 import { DeckCard } from "../../components"
 import { classAPI, deckAPI } from "../../services/api"
-
+import type { AppDispatch, RootState } from "../../store/store"
+import { fetchProgressStats } from "../../store/progressSlice"
 
 export default function ClassView() {
     const { classId } = useParams<{ classId: string }>()
     const [classData, setClassData] = useState<Class | null>(null)
     const [decks, setDecks] = useState<Deck[]>([])
     const [loading, setLoading] = useState(true)
+    const dispatch = useDispatch<AppDispatch>()
+    const progressLoaded = useSelector((state: RootState) => state.progress.lastFetched)
 
+    useEffect(() => {
+        if (!progressLoaded) {
+            dispatch(fetchProgressStats())
+        }
+    }, [dispatch, progressLoaded])
 
     useEffect(() => {
         

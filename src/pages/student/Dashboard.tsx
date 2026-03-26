@@ -1,14 +1,23 @@
 import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import ClassCard from "../../components/ClassCard";
 import type { Class } from "../../types";
 import { classAPI } from "../../services/api";
-import type { RootState } from "../../store/store";
+import type { AppDispatch, RootState } from "../../store/store";
+import { fetchProgressStats } from "../../store/progressSlice";
 
 export default function Dashboard() {
   const [classes, setClasses] = useState<Class[]>([])
   const [loading, setloading] = useState(true)
   const user = useSelector((state: RootState) => state.auth.user)
+  const dispatch = useDispatch<AppDispatch>()
+  const progressLoaded = useSelector((state: RootState) => state.progress.lastFetched)
+
+  useEffect(() => {
+    if (!progressLoaded) {
+      dispatch(fetchProgressStats())
+    }
+  }, [dispatch, progressLoaded])
 
   useEffect(() => {
   const fetchClasses = async () => {
