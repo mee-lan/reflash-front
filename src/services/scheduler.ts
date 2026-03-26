@@ -2,7 +2,6 @@ import type { FlashCard as Flashcard } from '../types';
 import seedrandom from 'seedrandom';
 
 class Scheduler {
-  private deckId: number;
   private deckCreatedAt: number;
   private flashcards: Flashcard[];
 
@@ -96,8 +95,7 @@ class Scheduler {
   //Determines how often a new card is inserted between review and learning cards
   private newCardModulus = 0;
 
-  constructor(deckId: number, deckCreatedAtEpoch: number, flashcards: Flashcard[], reps: number = 0) {
-    this.deckId = deckId;
+  constructor(_deckId: number, deckCreatedAtEpoch: number, flashcards: Flashcard[], reps: number = 0) {
     this.deckCreatedAt = deckCreatedAtEpoch;
     this.flashcards = flashcards;
     this.reps = reps;
@@ -945,7 +943,7 @@ class Scheduler {
    * @param early true if graduating via "Easy".
    * @returns interval in days.
    */
-  private graduatingIvl(card: Flashcard, conf: number[], early: boolean): number {
+  private graduatingIvl(card: Flashcard, _conf: number[], early: boolean): number {
     // Lapsed cards keep their existing (already-reduced) interval.
     if (card.type === 'REVIEW' || card.type === 'RELEARNING') {
       return card.ivl;

@@ -1,4 +1,4 @@
-export type UserRole = 'STUDENT' | 'TEACHER'
+export type UserRole = 'STUDENT' | 'TEACHER' | 'ADMINISTRATOR'
 
 export interface StudentUser {
   id: number
@@ -20,7 +20,16 @@ export interface TeacherUser {
   role: 'TEACHER'
 }
 
-export type AuthUser = StudentUser | TeacherUser
+export interface AdministratorUser {
+  id: number
+  firstName: string
+  lastName: string
+  username: string
+  email: string
+  role: 'ADMINISTRATOR'
+}
+
+export type AuthUser = StudentUser | TeacherUser | AdministratorUser
 
 export interface ApiResponse<T> {
   message?: string
@@ -73,4 +82,41 @@ export interface FlashCard {
   left: number
   due: number
   dirty?: boolean
+}
+
+export interface AdminCourseSummary {
+  id: number
+  name: string
+  description: string
+  grade: string
+  academicYear: string
+  studentCount: number
+  teacherCount: number
+}
+
+export interface AdminCourseFormData {
+  courseName: string
+  courseDescription: string
+  grade: string
+  academicYear: string
+  teachers: TeacherUser[]
+  students: StudentUser[]
+}
+
+export interface TeacherProfileFormData {
+  firstName: string
+  lastName: string
+  username: string
+  password: string
+  email: string
+}
+
+export interface StudentProfileFormData {
+  firstName: string
+  lastName: string
+  password: string
+  grade: string
+  section: string
+  academicYear: string
+  roll: string
 }

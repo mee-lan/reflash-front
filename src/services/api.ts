@@ -1,5 +1,17 @@
 import axios from 'axios'
-import type { ApiResponse, AuthUser, Class, Deck, FlashCard, UserRole } from '../types'
+import type {
+  ApiResponse,
+  AuthUser,
+  Class,
+  Deck,
+  FlashCard,
+  UserRole,
+  TeacherUser,
+  StudentUser,
+  AdminCourseFormData,
+  StudentProfileFormData,
+  TeacherProfileFormData,
+} from '../types'
 import { AUTH_STORAGE_KEY } from '../store/authSlice'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
@@ -81,6 +93,16 @@ type BackendNote = {
   additionalContext?: string
   tags?: string[]
   crt?: number
+}
+
+type BackendAdminCourse = {
+  courseId: number
+  courseName: string
+  courseDescription: string
+  grade: string
+  academicYear: string
+  teachers: TeacherUser[]
+  students: StudentUser[]
 }
 
 function getStoredUser(): AuthUser | null {
@@ -220,6 +242,22 @@ function mapDeckToDeckModel(deck: BackendDeck, courseId: number): Deck {
   }
 }
 
+function getApiErrorMessage(error: unknown, fallbackMessage: string) {
+  if (axios.isAxiosError(error)) {
+    const message = error.response?.data?.message
+
+    if (typeof message === 'string' && message.trim()) {
+      return message
+    }
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+
+  return fallbackMessage
+}
+
 function getCourseEndpoint(role: UserRole) {
   return role === 'TEACHER' ? '/api/teacher/courses' : '/api/student/courses'
 }
@@ -282,6 +320,89 @@ export const classAPI = {
 
     cacheClasses([...getCachedClasses(), newClass])
     return newClass
+  },
+}
+
+export const adminAPI = {
+  getTeachers: async (): Promise<TeacherUser[]> => {
+    const { data } = await apiClient.get<ApiResponse<TeacherUser[]>>('/api/admin/teachers')
+    return Array.isArray(data.mainBody) ? data.mainBody : []
+  },
+
+  getStudentsByGrade: async (grade: string): Promise<StudentUser[]> => {
+    const { data } = await apiClient.get<ApiResponse<StudentUser[]>>(
+      `/api/admin/students-by-grade?grade=${encodeURIComponent(grade)}`
+    )
+    return Array.isArray(data.mainBody) ? data.mainBody : []
+  },
+
+  createTeacherProfile: async (payload: TeacherProfileFormData): Promise<string> => {
+    try {
+      const { data } = await apiClient.post<ApiResponse<null>>('/api/admin/teacher-profile', payload)
+      return data.message || 'Teacher profile created successfully'
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to create teacher profile'))
+    }
+  },
+
+  createStudentProfile: async (payload: StudentProfileFormData): Promise<string> => {
+    try {
+      const { data } = await apiClient.post<ApiResponse<null>>('/api/admin/student-profile', payload)
+      return data.message || 'Student profile created successfully'
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to create student profile'))
+    }
+  },
+
+  createCourse: async (payload: AdminCourseFormData): Promise<string> => {
+    try {
+      const { data } = await apiClient.post<ApiResponse<null>>('/api/admin/course', {
+        courseName: payload.courseName,
+        courseDescription: payload.courseDescription,
+        grade: payload.grade,
+        academicYear: payload.academicYear,
+        teachers: payload.teachers.map((teacher) => teacher.id),
+        students: payload.students.map((student) => student.id),
+      })
+      return data.message || 'Course Created Successfully'
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to create course'))
+    }
+  },
+
+  getCourseForEdit: async (courseId: number): Promise<AdminCourseFormData & { courseId: number }> => {
+    try {
+      const { data } = await apiClient.get<ApiResponse<BackendAdminCourse>>(
+        `/api/admin/course-full?courseId=${courseId}`
+      )
+
+      if (!data.mainBody) {
+        throw new Error('Course not found')
+      }
+
+      return {
+        courseId: data.mainBody.courseId,
+        courseName: data.mainBody.courseName,
+        courseDescription: data.mainBody.courseDescription,
+        grade: data.mainBody.grade,
+        academicYear: data.mainBody.academicYear,
+        teachers: Array.isArray(data.mainBody.teachers) ? data.mainBody.teachers : [],
+        students: Array.isArray(data.mainBody.students) ? data.mainBody.students : [],
+      }
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to load course'))
+    }
+  },
+
+  updateCourse: async (
+    payload: AdminCourseFormData & { courseId: number }
+  ): Promise<string> => {
+    try {
+      const { data } = await apiClient.put<ApiResponse<null>>('/api/admin/edit-course', payload)
+      return data.message || 'Edit Successful'
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to save course changes'))
+    }
   },
 }
 

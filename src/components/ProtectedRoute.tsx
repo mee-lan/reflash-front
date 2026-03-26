@@ -1,12 +1,20 @@
 import React, { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import type { AppDispatch, RootState } from '../store/store'
 import { checkAuth } from '../store/authSlice'
 import type { AuthUser, UserRole } from '../types'
 
 function getHomeRoute(user: AuthUser | null) {
-  return user?.role === 'TEACHER' ? '/teacher/dashboard' : '/dashboard'
+  if (user?.role === 'TEACHER') {
+    return '/teacher/dashboard'
+  }
+
+  if (user?.role === 'ADMINISTRATOR') {
+    return '/admin/dashboard'
+  }
+
+  return '/dashboard'
 }
 
 export default function ProtectedRoute({
@@ -17,6 +25,7 @@ export default function ProtectedRoute({
   allowedRoles?: UserRole[]
 }) {
   const dispatch = useDispatch<AppDispatch>()
+  const location = useLocation()
   const { isAuthenticated, loading, user } = useSelector((state: RootState) => state.auth)
 
   useEffect(() => {
@@ -32,7 +41,8 @@ export default function ProtectedRoute({
   }
 
   if (!isAuthenticated || !user) {
-    return <Navigate to="/login" replace />
+    const loginPath = location.pathname.startsWith('/admin') ? '/admin' : '/login'
+    return <Navigate to={loginPath} replace />
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {

@@ -13,14 +13,19 @@ export default function Header() {
     const displayName = user ? `${user.firstName} ${user.lastName}` : 'User'
     const subtitle = user?.role === 'TEACHER'
         ? 'Teacher'
-        : user
-            ? `Grade ${user.grade} • Section ${user.section}`
-            : 'Student'
-    const detailText = user?.role === 'TEACHER'
-        ? user.email
+        : user?.role === 'ADMINISTRATOR'
+            ? 'Administrator'
+            : user
+                ? `Grade ${user.grade} • Section ${user.section}`
+                : 'Student'
+    const detailText = user?.role === 'TEACHER' || user?.role === 'ADMINISTRATOR'
+        ? `${user.email} • ${user.username}`
         : user
             ? `Roll ${user.roll} • ${user.academicYear}`
             : ''
+    const searchPlaceholder = user?.role === 'ADMINISTRATOR'
+        ? 'Search admin tools...'
+        : 'Search classes, decks...'
     const initials = user
         ? `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toUpperCase()
         : 'U'
@@ -28,7 +33,7 @@ export default function Header() {
     const handleLogout = async () => {
 
         await dispatch(logout())
-        navigate("/login")
+        navigate(user?.role === 'ADMINISTRATOR' ? '/admin' : "/login")
     }
 
     return (
@@ -49,7 +54,7 @@ export default function Header() {
 
                             <input
                                 type="text"
-                                placeholder="Search classes, decks..."
+                                placeholder={searchPlaceholder}
                                 className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                             />
                         </div>

@@ -8,6 +8,13 @@ import { Dashboard, ClassView, Progress } from "./pages/student"
 import DeckStudy from "./pages/student/DeckStudy"
 import { TeacherDashboard, TeacherClassView } from "./pages/teacher"
 import {TeacherDeckView} from "./pages/teacher"
+import {
+  AdminDashboard,
+  AdminCreateCoursePage,
+  AdminEditCoursePage,
+  AdminCreateStudentPage,
+  AdminCreateTeacherPage,
+} from "./pages/admin"
 
 
 
@@ -26,6 +33,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />}></Route>
         <Route path="/login" element={<Login />}></Route>
+        <Route path="/admin" element={<Login />}></Route>
         <Route path="/register" element={<Register />}></Route>
         <Route path="/dashboard" element={
           <ProtectedRoute allowedRoles={['STUDENT']}>
@@ -82,6 +90,57 @@ function AppRoutes() {
             </Layout>
           </ProtectedRoute>
         } />
+
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['ADMINISTRATOR']}>
+              <Layout>
+                <AdminDashboard />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/courses/create"
+          element={
+            <ProtectedRoute allowedRoles={['ADMINISTRATOR']}>
+              <Layout>
+                <AdminCreateCoursePage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/courses/edit"
+          element={
+            <ProtectedRoute allowedRoles={['ADMINISTRATOR']}>
+              <Layout>
+                <AdminEditCoursePage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/students/create"
+          element={
+            <ProtectedRoute allowedRoles={['ADMINISTRATOR']}>
+              <Layout>
+                <AdminCreateStudentPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/teachers/create"
+          element={
+            <ProtectedRoute allowedRoles={['ADMINISTRATOR']}>
+              <Layout>
+                <AdminCreateTeacherPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   )

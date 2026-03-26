@@ -1,8 +1,8 @@
 // src/pages/auth/Login.tsx
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useDispatch } from 'react-redux'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import type { AppDispatch } from '../../store/store'
 import { login } from '../../store/authSlice'
 import type { UserRole } from '../../types'
@@ -10,17 +10,30 @@ import type { UserRole } from '../../types'
 export default function Login() {
   const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
+  const location = useLocation()
+  const isAdminLogin = location.pathname === '/admin'
   const [formData, setFormData] = useState({
-    email: '',
+    identifier: '',
     password: '',
-    role: 'STUDENT' as UserRole,
+    role: (isAdminLogin ? 'ADMINISTRATOR' : 'STUDENT') as UserRole,
     rememberMe: false,
   })
 
   const [errors, setErrors] = useState({
-    email: '',
+    identifier: '',
     password: '',
   })
+
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      role: isAdminLogin ? 'ADMINISTRATOR' : prev.role === 'ADMINISTRATOR' ? 'STUDENT' : prev.role,
+    }))
+    setErrors({
+      identifier: '',
+      password: '',
+    })
+  }, [isAdminLogin])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
@@ -47,17 +60,13 @@ export default function Login() {
 
     // Basic validation (we'll add Redux logic later)
     const newErrors = {
-      email: '',
+      identifier: '',
       password: '',
     }
 
-    if (!formData.email) {
-      newErrors.email = 'Email is required'
+    if (!formData.identifier) {
+      newErrors.identifier = isAdminLogin ? 'Username is required' : 'Username is required'
     }
-    //  else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-    //   {/* Simple regex check for email format */ }
-    //   newErrors.email = 'Email is invalid'
-    // }
 
     if (!formData.password) {
       newErrors.password = 'Password is required'
@@ -65,16 +74,14 @@ export default function Login() {
       newErrors.password = 'Password must be at least 6 characters'
     }
 
-    if (newErrors.email || newErrors.password) {
+    if (newErrors.identifier || newErrors.password) {
       setErrors(newErrors)
       return
     }
 
-    console.log('Login submitted:', formData)
-
     try {
       const resultAction = await dispatch(login({
-        email: formData.email,
+        identifier: formData.identifier,
         password: formData.password,
         role: formData.role,
       }))
@@ -82,16 +89,17 @@ export default function Login() {
       if (login.fulfilled.match(resultAction)) {
         const destination = resultAction.payload.role === 'TEACHER'
           ? '/teacher/dashboard'
-          : '/dashboard'
+          : resultAction.payload.role === 'ADMINISTRATOR'
+            ? '/admin/dashboard'
+            : '/dashboard'
         navigate(destination)
-        console.log("Login successful!")
       } else {
         setErrors(prev => ({
           ...prev,
-          password: 'Invalid email or password'
+          password: isAdminLogin ? 'Invalid username or password' : 'Invalid username or password'
         }))
       }
-    } catch (err) {
+    } catch {
       setErrors(prev => ({
         ...prev,
         password: 'Login failed'
@@ -122,10 +130,10 @@ export default function Login() {
             </svg>
           </div>
           <h1 className="text-3xl font-bold text-neutral-900 mb-2">
-            Welcome to Re-Flash
+            {isAdminLogin ? 'Re-Flash Admin' : 'Welcome to Re-Flash'}
           </h1>
           <p className="text-neutral-600">
-            Sign in to continue learning
+            {isAdminLogin ? 'Sign in to manage courses, teachers, and students' : 'Sign in to continue learning'}
           </p>
         </div>
 
@@ -134,25 +142,22 @@ export default function Login() {
           <div className="card-body">
             <form onSubmit={handleSubmit} className="space-y-5">
 
-              {/* Email Field */}
+              {/* Username Field */}
               <div className="form-group">
-                <label htmlFor="email" className="form-label">
-                  Email Address
+                <label htmlFor="identifier" className="form-label">
+                  {isAdminLogin ? 'Username' : 'Username'}
                 </label>
                 <input
-                  id="email"
-                  name="email"
-
-                  // Changed the type from email to text for now as test db expect username not email 
-                  // Will fix it later
+                  id="identifier"
+                  name="identifier"
                   type='text'
-                  value={formData.email}
+                  value={formData.identifier}
                   onChange={handleChange}
-                  className={`form-input ${errors.email ? 'form-input-error' : ''}`}
-                  placeholder="you@example.com"
+                  className={`form-input ${errors.identifier ? 'form-input-error' : ''}`}
+                  placeholder={isAdminLogin ? 'Enter admin username' : 'Enter username'}
                 />
-                {errors.email && (
-                  <p className="form-error">{errors.email}</p>
+                {errors.identifier && (
+                  <p className="form-error">{errors.identifier}</p>
                 )}
               </div>
 
@@ -175,30 +180,32 @@ export default function Login() {
                 )}
               </div>
 
-              <div className="form-group">
-                <p className="form-label mb-3">Login As</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <label className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${formData.role === 'STUDENT' ? 'border-primary-500 bg-primary-50' : 'border-neutral-300 bg-white'}`}>
-                    <input
-                      type="checkbox"
-                      checked={formData.role === 'STUDENT'}
-                      onChange={() => handleRoleSelect('STUDENT')}
-                      className="w-4 h-4 text-primary-500 border-neutral-300 rounded focus:ring-primary-500"
-                    />
-                    <span className="text-sm font-medium text-neutral-800">Student</span>
-                  </label>
+              {!isAdminLogin && (
+                <div className="form-group">
+                  <p className="form-label mb-3">Login As</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${formData.role === 'STUDENT' ? 'border-primary-500 bg-primary-50' : 'border-neutral-300 bg-white'}`}>
+                      <input
+                        type="checkbox"
+                        checked={formData.role === 'STUDENT'}
+                        onChange={() => handleRoleSelect('STUDENT')}
+                        className="w-4 h-4 text-primary-500 border-neutral-300 rounded focus:ring-primary-500"
+                      />
+                      <span className="text-sm font-medium text-neutral-800">Student</span>
+                    </label>
 
-                  <label className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${formData.role === 'TEACHER' ? 'border-primary-500 bg-primary-50' : 'border-neutral-300 bg-white'}`}>
-                    <input
-                      type="checkbox"
-                      checked={formData.role === 'TEACHER'}
-                      onChange={() => handleRoleSelect('TEACHER')}
-                      className="w-4 h-4 text-primary-500 border-neutral-300 rounded focus:ring-primary-500"
-                    />
-                    <span className="text-sm font-medium text-neutral-800">Teacher</span>
-                  </label>
+                    <label className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${formData.role === 'TEACHER' ? 'border-primary-500 bg-primary-50' : 'border-neutral-300 bg-white'}`}>
+                      <input
+                        type="checkbox"
+                        checked={formData.role === 'TEACHER'}
+                        onChange={() => handleRoleSelect('TEACHER')}
+                        className="w-4 h-4 text-primary-500 border-neutral-300 rounded focus:ring-primary-500"
+                      />
+                      <span className="text-sm font-medium text-neutral-800">Teacher</span>
+                    </label>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Remember Me & Forgot Password */}
               <div className="flex items-center justify-between">
@@ -237,13 +244,27 @@ export default function Login() {
 
         {/* Register Link */}
         <p className="text-center mt-6 text-neutral-600">
-          Don't have an account?{' '}
-          <Link
-            to="/register"
-            className="font-medium text-primary-600 hover:text-primary-700"
-          >
-            Create one now
-          </Link>
+          {isAdminLogin ? (
+            <>
+              Need student or teacher access?{' '}
+              <Link
+                to="/login"
+                className="font-medium text-primary-600 hover:text-primary-700"
+              >
+                Go to standard login
+              </Link>
+            </>
+          ) : (
+            <>
+              Looking for admin access?{' '}
+              <Link
+                to="/admin"
+                className="font-medium text-primary-600 hover:text-primary-700"
+              >
+                Use admin login
+              </Link>
+            </>
+          )}
         </p>
       </div>
     </div>

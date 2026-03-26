@@ -52,9 +52,9 @@ const storedAuth = loadStoredAuth()
 export const login = createAsyncThunk(
   'auth/login',
   async (
-    { email, password, role }: { email: string; password: string; role: UserRole }
+    { identifier, password, role }: { identifier: string; password: string; role: UserRole }
   ) => {
-    const credentials = btoa(`${email}:${password}`)
+    const credentials = btoa(`${identifier}:${password}`)
 
     const response = await fetch(`${API_URL}/login`, {
       method: 'GET',
