@@ -78,8 +78,7 @@ export default function TeacherDeckView() {
         if (!selectedCard) return
 
         try {
-            // await flashcardAPI.deleteCard(selectedCard.id)
-            //TODO: implement deleteCard API
+            await flashcardAPI.deleteCard(selectedCard.id, Number(deckId))
 
             setCards(cards.filter(c => c.id !== selectedCard.id))
             setShowDeleteConfirm(false)

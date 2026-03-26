@@ -702,6 +702,45 @@ export const flashcardAPI = {
     return updatedCard
 
   },
+
+  deleteCard: async (cardId: number, deckId: number): Promise<void> => {
+    const role = getCurrentRole()
+
+    if (role === 'TEACHER') {
+      const { data } = await apiClient.get<ApiResponse<BackendNote[]>>(
+        `/api/teacher/notes-by-deck?deckId=${deckId}`
+      )
+      const notes = Array.isArray(data.mainBody) ? data.mainBody : []
+
+      const updatedNotes = notes
+        .filter((n) => n.noteId !== cardId)
+        .map((n) => ({
+          noteId: n.noteId,
+          front: n.front,
+          back: n.back,
+          additionalContext: n.additionalContext,
+          tags: n.tags,
+        }))
+
+      const deck = getCachedDecks().find((d) => d.id === deckId)
+
+      await apiClient.put('/api/teacher/edit-deck', {
+        deckId,
+        deckName: deck?.title,
+        deckDescription: deck?.description,
+        notes: updatedNotes,
+      })
+
+      return
+    }
+
+    // Cache path for non-teacher
+    const cards = readCache<FlashCard>(getClassCacheKey())
+    writeCache(
+      getClassCacheKey(),
+      cards.filter((card) => card.id !== cardId)
+    )
+  },
 }
 
 export const aiAPI = {
