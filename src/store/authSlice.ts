@@ -71,7 +71,7 @@ export const login = createAsyncThunk(
       throw new Error(data.message || 'Login failed')
     }
 
-    return data.mainBody
+    return { ...data.mainBody, role }
   }
 )
 

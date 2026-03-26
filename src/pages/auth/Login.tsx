@@ -1,16 +1,29 @@
 // src/pages/auth/Login.tsx
 
-import { useEffect, useState } from 'react'
-import { useDispatch } from 'react-redux'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import type { AppDispatch } from '../../store/store'
+import { useState, useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import type { AppDispatch, RootState } from '../../store/store'
 import { login } from '../../store/authSlice'
 import type { UserRole } from '../../types'
 
 export default function Login() {
   const dispatch = useDispatch<AppDispatch>()
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth)
   const navigate = useNavigate()
   const location = useLocation()
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const destination = user.role === 'TEACHER'
+        ? '/teacher/dashboard'
+        : user.role === 'ADMINISTRATOR'
+          ? '/admin/dashboard'
+          : '/dashboard'
+      navigate(destination, { replace: true })
+    }
+  }, [isAuthenticated, user, navigate])
+
   const isAdminLogin = location.pathname === '/admin'
   const [formData, setFormData] = useState({
     identifier: '',
@@ -19,21 +32,17 @@ export default function Login() {
     rememberMe: false,
   })
 
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      role: isAdminLogin ? 'ADMINISTRATOR' : (prev.role === 'ADMINISTRATOR' ? 'STUDENT' : prev.role)
+    }))
+  }, [isAdminLogin])
+
   const [errors, setErrors] = useState({
     identifier: '',
     password: '',
   })
-
-  useEffect(() => {
-    setFormData((prev) => ({
-      ...prev,
-      role: isAdminLogin ? 'ADMINISTRATOR' : prev.role === 'ADMINISTRATOR' ? 'STUDENT' : prev.role,
-    }))
-    setErrors({
-      identifier: '',
-      password: '',
-    })
-  }, [isAdminLogin])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
