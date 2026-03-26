@@ -1,41 +1,79 @@
-import { useLocation,Link } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { useLocation, Link } from "react-router-dom"
 import { useSelector } from "react-redux"
 import type { RootState } from "../store/store"
+import { classAPI } from "../services/api"
+import type { Class } from "../types"
 
 export default function Sidebar(){
     const location = useLocation()
     const user = useSelector((state: RootState) => state.auth.user)
-    const dashboardPath = user?.role === 'TEACHER'
-      ? '/teacher/dashboard'
-      : user?.role === 'ADMINISTRATOR'
-        ? '/admin/dashboard'
-        : '/dashboard'
+    const [classes, setClasses] = useState<Class[]>([])
+    const [loading, setLoading] = useState(false)
+
+    useEffect(() => {
+        if (user?.role === 'STUDENT' || user?.role === 'TEACHER') {
+            const fetchClasses = async () => {
+                try {
+                    setLoading(true)
+                    const data = await classAPI.getAllClasses()
+                    setClasses(data)
+                } catch (error) {
+                    console.error("Failed to fetch classes for sidebar:", error)
+                } finally {
+                    setLoading(false)
+                }
+            }
+            fetchClasses()
+        }
+    }, [user?.role])
     
     const isActive = (item: { to: string, label: string }) => {
         if (item.label === 'Dashboard') {
             return location.pathname === item.to
         }
-        if (item.label === 'My Classes') {
-            const classPrefix = user?.role === 'TEACHER' ? '/teacher/class' : '/class'
-            const deckPrefix = user?.role === 'TEACHER' ? '/teacher/deck' : '/study'
-            return location.pathname.startsWith(classPrefix) || location.pathname.startsWith(deckPrefix)
-        }
         return location.pathname === item.to || location.pathname.startsWith(item.to + '/')
     }
 
-    const navigationItems = user?.role === 'ADMINISTRATOR'
-      ? [
-          { to: '/admin/dashboard', label: 'Dashboard', icon: 'home' },
-          { to: '/admin/courses/create', label: 'Create Course', icon: 'book' },
-          { to: '/admin/courses/edit', label: 'Edit Course', icon: 'pencil' },
-          { to: '/admin/students/create', label: 'New Student', icon: 'users' },
-          { to: '/admin/teachers/create', label: 'New Teacher', icon: 'user-plus' },
+    const getColorClass = (color: string) => {
+        switch (color) {
+            case 'blue': return 'bg-blue-500'
+            case 'green': return 'bg-green-500'
+            case 'red': return 'bg-red-500'
+            case 'purple': return 'bg-purple-500'
+            case 'orange': return 'bg-orange-500'
+            case 'teal': return 'bg-teal-500'
+            default: return 'bg-blue-500'
+        }
+    }
+
+    const getNavigationItems = () => {
+        if (user?.role === 'ADMINISTRATOR') {
+            return [
+                { to: '/admin/dashboard', label: 'Dashboard', icon: 'home' },
+                { to: '/admin/courses/create', label: 'Create Course', icon: 'book' },
+                { to: '/admin/courses/edit', label: 'Edit Course', icon: 'pencil' },
+                { to: '/admin/students/create', label: 'New Student', icon: 'users' },
+                { to: '/admin/teachers/create', label: 'New Teacher', icon: 'user-plus' },
+            ]
+        }
+
+        if (user?.role === 'TEACHER') {
+            return [
+                { to: '/teacher/dashboard', label: 'Dashboard', icon: 'home' },
+                { to: '/teacher/students', label: 'My Students', icon: 'users' },
+                { to: '/teacher/insights', label: 'Class Insights', icon: 'chart' },
+            ]
+        }
+
+        // Student
+        return [
+            { to: '/dashboard', label: 'Dashboard', icon: 'home' },
+            { to: '/progress', label: 'My Progress', icon: 'chart' },
         ]
-      : [
-          { to: dashboardPath, label: 'Dashboard', icon: 'home' },
-          { to: dashboardPath, label: 'My Classes', icon: 'book' },
-          { to: '/progress', label: 'Progress', icon: 'chart' },
-        ]
+    }
+
+    const navigationItems = getNavigationItems()
 
     const renderIcon = (icon: string) => {
       if (icon === 'home') {
@@ -78,9 +116,17 @@ export default function Sidebar(){
         )
       }
 
+      if (icon === 'chart') {
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        )
+      }
+
       return (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
         </svg>
       )
     }
@@ -101,7 +147,7 @@ export default function Sidebar(){
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-4 overflow-y-auto">
         <ul className="space-y-2">
           {navigationItems.map((item) => (
             <li key={item.to + item.label}>
@@ -119,6 +165,44 @@ export default function Sidebar(){
             </li>
           ))}
         </ul>
+
+        {/* Dynamic Classes Section */}
+        {(user?.role === 'STUDENT' || user?.role === 'TEACHER') && (
+            <div className="mt-8">
+                <h3 className="px-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">
+                    My Classes
+                </h3>
+                {loading ? (
+                    <div className="px-4 py-2 flex items-center justify-center">
+                        <div className="spinner w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                ) : classes.length > 0 ? (
+                    <ul className="space-y-1">
+                        {classes.map(cls => {
+                            const classPath = user.role === 'TEACHER' ? `/teacher/class/${cls.id}` : `/class/${cls.id}`;
+                            const active = location.pathname === classPath || location.pathname.startsWith(classPath + '/');
+                            return (
+                                <li key={cls.id}>
+                                    <Link
+                                        to={classPath}
+                                        className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${
+                                            active
+                                                ? 'bg-neutral-100 text-neutral-900 font-medium'
+                                                : 'text-neutral-600 hover:bg-neutral-50'
+                                        }`}
+                                    >
+                                        <span className={`w-2.5 h-2.5 rounded-full ${getColorClass(cls.color)} shrink-0`}></span>
+                                        <span className="truncate text-sm">{cls.name}</span>
+                                    </Link>
+                                </li>
+                            )
+                        })}
+                    </ul>
+                ) : (
+                    <div className="px-4 py-2 text-sm text-neutral-500">No classes yet</div>
+                )}
+            </div>
+        )}
       </nav>
 
       {/* Footer */}
