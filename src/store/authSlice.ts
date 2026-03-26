@@ -71,7 +71,7 @@ export const login = createAsyncThunk(
       throw new Error(data.message || 'Login failed')
     }
 
-    return { ...data.mainBody, role }
+    return { ...data.mainBody, role } as AuthUser
   }
 )
 
