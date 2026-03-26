@@ -96,7 +96,7 @@ export default function Sidebar(){
       <nav className="flex-1 p-4">
         <ul className="space-y-2">
           {navigationItems.map((item) => (
-            <li key={item.to}>
+            <li key={item.to + item.label}>
               <Link
                 to={item.to}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
