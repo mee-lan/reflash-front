@@ -37,8 +37,8 @@ export default function Header() {
     }
 
     return (
-        <header className="bg-white border-b border-neutral-200 sticky top-0 z-40">
-            <div className="px-6 py-4">
+        <header className="bg-white border-b border-neutral-200 sticky top-0 z-40 h-20 flex items-center">
+            <div className="px-6 w-full">
                 <div className="flex items-center justify-between">
                     {/* Search Bar */}
                     <div className="flex-1 max-w-xl">
