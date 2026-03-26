@@ -1,14 +1,19 @@
 import type { FlashCard, Deck } from "../../types";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { aiAPI, deckAPI, flashcardAPI } from "../../services/api";
 import { AIGenerateButton, MarkdownEditor, MarkdownViewer } from "../../components";
+import { createPendingMarkdownImageToken, getMarkdownImageUrl, resolveMarkdownImageUrl, uploadMarkdownImage } from "../../services/supabaseStorage";
 
 type AIGeneratedCardDraft = {
     id: number
     question: string
     answer: string
     hint: string
+}
+
+function extractMarkdownImageSources(content: string) {
+    return Array.from(content.matchAll(/!\[[^\]]*]\(([^)\s]+)(?:\s+"[^"]*")?\)/g), (match) => match[1])
 }
 
 export default function TeacherDeckView() {
@@ -33,6 +38,8 @@ export default function TeacherDeckView() {
         note: ''
     })
     const [aiDraftCards, setAIDraftCards] = useState<AIGeneratedCardDraft[]>([])
+    const [resolvedImageUrls, setResolvedImageUrls] = useState<Record<string, string>>({})
+    const pendingMarkdownImagesRef = useRef<Record<string, { file: File; previewUrl: string }>>({})
 
     useEffect(() => {
         const fetchData = async () => {
@@ -53,6 +60,60 @@ export default function TeacherDeckView() {
         fetchData();
     }, [deckId])
 
+    useEffect(() => {
+        const markdownContents = [
+            cardFormData.front,
+            cardFormData.back,
+            editFormData.front,
+            editFormData.back,
+            ...aiDraftCards.flatMap((draft) => [draft.question, draft.answer]),
+        ]
+
+        const sourcesToResolve = Array.from(
+            new Set(
+                markdownContents
+                    .flatMap((content) => extractMarkdownImageSources(content))
+                    .filter((source) =>
+                        source &&
+                        !source.startsWith('pending-image://') &&
+                        !/^(https?:)?\/\//i.test(source) &&
+                        !source.startsWith('/') &&
+                        !source.startsWith('blob:') &&
+                        !source.startsWith('data:')
+                    )
+            )
+        ).filter((source) => !resolvedImageUrls[source])
+
+        if (sourcesToResolve.length === 0) {
+            return
+        }
+
+        let cancelled = false
+
+        void Promise.all(
+            sourcesToResolve.map(async (source) => ({
+                source,
+                url: await getMarkdownImageUrl(source),
+            }))
+        ).then((entries) => {
+            if (cancelled) {
+                return
+            }
+
+            setResolvedImageUrls((current) => {
+                const next = { ...current }
+                for (const entry of entries) {
+                    next[entry.source] = entry.url
+                }
+                return next
+            })
+        })
+
+        return () => {
+            cancelled = true
+        }
+    }, [aiDraftCards, cardFormData.back, cardFormData.front, editFormData.back, editFormData.front, resolvedImageUrls])
+
     const handleCreateCard = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
@@ -62,7 +123,8 @@ export default function TeacherDeckView() {
         }
 
         try {
-            const newCard = await flashcardAPI.createCard(Number(deckId), cardFormData);
+            const preparedCardData = await prepareCardContentForSave(cardFormData)
+            const newCard = await flashcardAPI.createCard(Number(deckId), preparedCardData);
             setCards(prev => [...prev, newCard]);
             setShowCreateCardModal(false);
             setCardFormData({ front: "", back: "", note: "" });
@@ -96,12 +158,13 @@ export default function TeacherDeckView() {
 
         try {
             // Update card via API
-            await flashcardAPI.updateCard(selectedCard.id,Number(deckId), editFormData)
+            const preparedCardData = await prepareCardContentForSave(editFormData)
+            await flashcardAPI.updateCard(selectedCard.id,Number(deckId), preparedCardData)
 
             // Update local state
             setCards(cards.map(c =>
                 c.id === selectedCard.id
-                    ? { ...c, ...editFormData }
+                    ? { ...c, ...preparedCardData }
                     : c
             ))
 
@@ -149,11 +212,12 @@ export default function TeacherDeckView() {
         }
 
         try {
-            const createdCard = await flashcardAPI.createCard(Number(deckId), {
+            const preparedCardData = await prepareCardContentForSave({
                 front: draft.question,
                 back: draft.answer,
                 note: draft.hint,
             })
+            const createdCard = await flashcardAPI.createCard(Number(deckId), preparedCardData)
             setCards((currentCards) => [...currentCards, createdCard])
             setAIDraftCards((currentDrafts) => currentDrafts.filter((item) => item.id !== draftId))
         } catch (error) {
@@ -173,11 +237,11 @@ export default function TeacherDeckView() {
         try {
             const createdCards = await Promise.all(
                 aiDraftCards.map((draft) =>
-                    flashcardAPI.createCard(Number(deckId), {
+                    prepareCardContentForSave({
                         front: draft.question,
                         back: draft.answer,
                         note: draft.hint,
-                    })
+                    }).then((preparedCardData) => flashcardAPI.createCard(Number(deckId), preparedCardData))
                 )
             )
 
@@ -186,6 +250,68 @@ export default function TeacherDeckView() {
         } catch (error) {
             console.error('Failed to confirm all AI generated cards:', error)
             alert('Failed to save generated cards. Please try again.')
+        }
+    }
+
+    const handleMarkdownImageUpload = async (file: File) => {
+        const token = createPendingMarkdownImageToken(file)
+        pendingMarkdownImagesRef.current[token] = {
+            file,
+            previewUrl: URL.createObjectURL(file),
+        }
+
+        return token
+    }
+
+    const handleMarkdownImageRemove = (source: string) => {
+        const pendingImage = pendingMarkdownImagesRef.current[source]
+
+        if (!pendingImage) {
+            return
+        }
+
+        URL.revokeObjectURL(pendingImage.previewUrl)
+        delete pendingMarkdownImagesRef.current[source]
+    }
+
+    const resolveCardImageSrc = (source: string) => {
+        const pendingImage = pendingMarkdownImagesRef.current[source]
+
+        if (pendingImage) {
+            return pendingImage.previewUrl
+        }
+
+        const resolvedImageUrl = resolvedImageUrls[source]
+
+        if (resolvedImageUrl) {
+            return resolvedImageUrl
+        }
+
+        return resolveMarkdownImageUrl(source)
+    }
+
+    const uploadPendingImagesInContent = async (content: string) => {
+        let updatedContent = content
+
+        for (const [token, pendingImage] of Object.entries(pendingMarkdownImagesRef.current)) {
+            if (!updatedContent.includes(token)) {
+                continue
+            }
+
+            const storedImagePath = await uploadMarkdownImage(pendingImage.file, Number(deckId))
+            updatedContent = updatedContent.split(token).join(storedImagePath)
+            URL.revokeObjectURL(pendingImage.previewUrl)
+            delete pendingMarkdownImagesRef.current[token]
+        }
+
+        return updatedContent
+    }
+
+    const prepareCardContentForSave = async (cardData: { front: string; back: string; note?: string }) => {
+        return {
+            ...cardData,
+            front: await uploadPendingImagesInContent(cardData.front),
+            back: await uploadPendingImagesInContent(cardData.back),
         }
     }
 
@@ -436,6 +562,9 @@ export default function TeacherDeckView() {
                                                             <MarkdownEditor
                                                                 value={draft.question}
                                                                 onChange={(value) => handleUpdateAIDraft(draft.id, 'question', value)}
+                                                                onImageUpload={handleMarkdownImageUpload}
+                                                                onImageRemove={handleMarkdownImageRemove}
+                                                                resolveImageSrc={resolveCardImageSrc}
                                                             />
                                                         </div>
 
@@ -444,6 +573,9 @@ export default function TeacherDeckView() {
                                                             <MarkdownEditor
                                                                 value={draft.answer}
                                                                 onChange={(value) => handleUpdateAIDraft(draft.id, 'answer', value)}
+                                                                onImageUpload={handleMarkdownImageUpload}
+                                                                onImageRemove={handleMarkdownImageRemove}
+                                                                resolveImageSrc={resolveCardImageSrc}
                                                             />
                                                         </div>
 
@@ -470,6 +602,9 @@ export default function TeacherDeckView() {
                                     <MarkdownEditor
                                         value={cardFormData.front}
                                         onChange={(value) => setCardFormData({ ...cardFormData, front: value })}
+                                        onImageUpload={handleMarkdownImageUpload}
+                                        onImageRemove={handleMarkdownImageRemove}
+                                        resolveImageSrc={resolveCardImageSrc}
                                     />
                                 </div>
 
@@ -479,6 +614,9 @@ export default function TeacherDeckView() {
                                     <MarkdownEditor
                                         value={cardFormData.back}
                                         onChange={(value) => setCardFormData({ ...cardFormData, back: value })}
+                                        onImageUpload={handleMarkdownImageUpload}
+                                        onImageRemove={handleMarkdownImageRemove}
+                                        resolveImageSrc={resolveCardImageSrc}
                                     />
                                 </div>
 
@@ -585,6 +723,9 @@ export default function TeacherDeckView() {
                                         <MarkdownEditor
                                             value={editFormData.front}
                                             onChange={(value) => setEditFormData({ ...editFormData, front: value })}
+                                            onImageUpload={handleMarkdownImageUpload}
+                                            onImageRemove={handleMarkdownImageRemove}
+                                            resolveImageSrc={resolveCardImageSrc}
                                         />
                                     </div>
 
@@ -593,6 +734,9 @@ export default function TeacherDeckView() {
                                         <MarkdownEditor
                                             value={editFormData.back}
                                             onChange={(value) => setEditFormData({ ...editFormData, back: value })}
+                                            onImageUpload={handleMarkdownImageUpload}
+                                            onImageRemove={handleMarkdownImageRemove}
+                                            resolveImageSrc={resolveCardImageSrc}
                                         />
                                     </div>
 

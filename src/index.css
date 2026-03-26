@@ -457,3 +457,60 @@
 .react-resizable-handle-s:hover {
   background: linear-gradient(to bottom, transparent, rgba(16, 185, 129, 0.3));
 }
+
+.editor-preview img,
+.editor-preview-side img,
+.markdown-content img {
+  width: 30%;
+  height: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.markdown-preview-image-wrapper {
+  position: relative;
+  display: inline-block;
+  width: min(30%, 16rem);
+  max-width: 100%;
+}
+
+.markdown-preview-image-wrapper img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.markdown-image-row,
+.editor-preview p:has(.markdown-preview-image-wrapper + .markdown-preview-image-wrapper),
+.editor-preview-side p:has(.markdown-preview-image-wrapper + .markdown-preview-image-wrapper) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.markdown-image-row img {
+  width: 100%;
+}
+
+.markdown-preview-image-remove {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(17, 24, 39, 0.78);
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.markdown-preview-image-remove:hover {
+  background: rgba(220, 38, 38, 0.92);
+}
