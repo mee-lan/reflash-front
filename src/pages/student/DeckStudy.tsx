@@ -1,15 +1,18 @@
 import { useEffect, useState, useRef } from "react";
+import { useDispatch } from "react-redux";
 import type { Deck, FlashCard as FlashCardType } from "../../types";
 import { useNavigate, useParams, Link } from "react-router-dom";
 
 import { FlashCard } from "../../components";
 import { deckAPI, flashcardAPI } from "../../services/api";
 import { Scheduler } from "../../services/scheduler";
+import { invalidateProgress } from "../../store/progressSlice";
 
 export default function DeckStudy() {
     const [deck, setDeck] = useState<Deck | null>(null)
     const { deckId } = useParams<{ deckId: string }>()
     const navigate = useNavigate()
+    const dispatch = useDispatch()
     const [cards, setCards] = useState<FlashCardType[]>([])
 
     // Scheduler state
@@ -19,6 +22,39 @@ export default function DeckStudy() {
 
     const [loading, setLoading] = useState(true)
     const [studyComplete, setStudyComplete] = useState(false)
+    const [syncing, setSyncing] = useState(false)
+
+    // Refs for unmount syncing
+    const deckRef = useRef<Deck | null>(null)
+    const cardsRef = useRef<FlashCardType[]>([])
+    const syncNeededRef = useRef(false)
+
+    useEffect(() => {
+        deckRef.current = deck
+        cardsRef.current = cards
+    }, [deck, cards])
+
+    // Cleanup and window close sync
+    useEffect(() => {
+        const syncProgress = () => {
+            if (syncNeededRef.current && deckRef.current && cardsRef.current.length > 0) {
+                flashcardAPI.syncCards(deckRef.current.id, cardsRef.current).catch(err => console.error("Sync on exit failed:", err))
+                syncNeededRef.current = false
+                dispatch(invalidateProgress()) // Inform Redux on unmount
+            }
+        }
+
+        const handleBeforeUnload = () => {
+            syncProgress()
+        }
+
+        window.addEventListener('beforeunload', handleBeforeUnload)
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload)
+            syncProgress()
+        }
+    }, [])
 
     useEffect(() => {
 
@@ -44,7 +80,6 @@ export default function DeckStudy() {
                 console.log("Fetched cards:", fetchedCards)
 
                 if (fetchedCards.length > 0) {
-                    const deckCreatedAtEpoch = Math.floor(new Date(fetchedDeck.createdAt).getTime() / 1000)
                     const sched = new Scheduler(fetchedDeck.id, fetchedDeck.crt, fetchedCards, 0)
                     schedulerRef.current = sched
 
@@ -76,6 +111,7 @@ export default function DeckStudy() {
         try {
             schedulerRef.current.answerCard(currentCard, ease)
             setReviewedCount(prev => prev + 1)
+            syncNeededRef.current = true
             console.log(`Card ${currentCard.id} rated with ease ${ease}`)
 
             const nextCard = schedulerRef.current.getCard()
@@ -85,9 +121,29 @@ export default function DeckStudy() {
                 setStudyComplete(true)
                 // Sync all updated cards to backend
                 await flashcardAPI.syncCards(deck.id, cards)
+                syncNeededRef.current = false
+                dispatch(invalidateProgress()) // Tell Redux to refetch stats on next view
             }
         } catch (error) {
             console.error('Failed to rate card:', error)
+        }
+    }
+
+    const handleEndSession = async () => {
+        if (!deck) return
+        
+        try {
+            setSyncing(true)
+            if (syncNeededRef.current) {
+                await flashcardAPI.syncCards(deck.id, cards)
+                syncNeededRef.current = false
+                dispatch(invalidateProgress()) // Tell Redux to refetch stats on next view
+            }
+            setStudyComplete(true)
+        } catch (error) {
+            console.error("Failed to sync on end session", error)
+        } finally {
+            setSyncing(false)
         }
     }
 
@@ -166,13 +222,26 @@ export default function DeckStudy() {
                             </div>
                         </div>
 
-                        <div className="text-right">
-                            <p className="text-sm font-medium text-neutral-900">
-                                Reviews: {reviewedCount}
-                            </p>
-                            <p className="text-xs text-neutral-600">
-                                Session progress
-                            </p>
+                        <div className="flex items-center gap-6">
+                            <div className="text-right">
+                                <p className="text-sm font-medium text-neutral-900">
+                                    Reviews: {reviewedCount}
+                                </p>
+                                <p className="text-xs text-neutral-600">
+                                    Session progress
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={handleEndSession}
+                                disabled={syncing}
+                                className="px-4 py-2 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {syncing ? (
+                                    <div className="w-4 h-4 border-2 border-neutral-400 border-t-transparent rounded-full animate-spin"></div>
+                                ) : null}
+                                End Session
+                            </button>
                         </div>
                     </div>
 
