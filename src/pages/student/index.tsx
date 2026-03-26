@@ -1,3 +1,4 @@
 import ClassView from "./ClassView";
 import Dashboard from "./Dashboard";
-export { ClassView, Dashboard };
+import Progress from "./Progress";
+export { ClassView, Dashboard, Progress };

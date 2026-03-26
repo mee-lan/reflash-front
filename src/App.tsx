@@ -4,7 +4,7 @@ import Register from "./pages/auth/Register"
 import { Provider } from "react-redux"
 import { store } from "./store/store"
 import { ProtectedRoute, Layout } from "./components"
-import { Dashboard, ClassView } from "./pages/student"
+import { Dashboard, ClassView, Progress } from "./pages/student"
 import DeckStudy from "./pages/student/DeckStudy"
 import { TeacherDashboard, TeacherClassView } from "./pages/teacher"
 import {TeacherDeckView} from "./pages/teacher"
@@ -75,6 +75,13 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+        <Route path="/progress" element={
+          <ProtectedRoute allowedRoles={['STUDENT']}>
+            <Layout>
+              <Progress />
+            </Layout>
+          </ProtectedRoute>
+        } />
       </Routes>
     </BrowserRouter>
   )
