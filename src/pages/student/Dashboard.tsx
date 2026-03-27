@@ -111,7 +111,7 @@ export default function Dashboard() {
       </div>
 
       {/* Progress Overview Section */}
-      {overallStats && overallStats.totalCards > 0 && (
+      {overallStats && overallStats.totalCards > 0 && !searchQuery && (
         <div className="mb-10 animate-fade-in">
           <h2 className="text-xl font-bold text-neutral-800 mb-4 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-primary-500" />
