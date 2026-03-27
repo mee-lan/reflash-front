@@ -228,9 +228,19 @@ export default function MarkdownEditor({ value, onChange, onImageUpload, onImage
             return
         }
 
+        await insertImageAtCursor(selectedFile, pendingEditorRef.current?.codemirror ?? codemirrorRef.current)
+
+        pendingEditorRef.current = null
+        event.target.value = ''
+    }
+
+    const insertImageAtCursor = async (selectedFile: File, editor?: CodeMirror.Editor | null) => {
+        if (!selectedFile) {
+            return
+        }
+
         if (!onImageUploadRef.current) {
             alert('Image upload is not configured for this editor.')
-            event.target.value = ''
             return
         }
 
@@ -238,11 +248,9 @@ export default function MarkdownEditor({ value, onChange, onImageUpload, onImage
             setIsUploadingImage(true)
             const storedImagePath = await onImageUploadRef.current(selectedFile)
             const markdownImage = `![${selectedFile.name}](${storedImagePath})`
-            const editor = pendingEditorRef.current
-
-            if (editor?.codemirror) {
-                const cursor = editor.codemirror.getCursor()
-                editor.codemirror.replaceRange(markdownImage, cursor)
+            if (editor) {
+                const cursor = editor.getCursor()
+                editor.replaceRange(markdownImage, cursor)
             } else {
                 const currentValue = valueRef.current
                 onChangeRef.current(`${currentValue}${currentValue.endsWith('\n') || !currentValue ? '' : '\n'}${markdownImage}`)
@@ -252,10 +260,77 @@ export default function MarkdownEditor({ value, onChange, onImageUpload, onImage
             alert(error instanceof Error ? error.message : 'Failed to upload image.')
         } finally {
             setIsUploadingImage(false)
-            pendingEditorRef.current = null
-            event.target.value = ''
         }
     }
+
+    useEffect(() => {
+        const codemirror = codemirrorRef.current
+
+        if (!codemirror) {
+            return
+        }
+
+        const handlePaste = (_editor: CodeMirror.Editor, event: ClipboardEvent) => {
+            if (isUploadingImage) {
+                return
+            }
+
+            const clipboardItems = Array.from(event.clipboardData?.items ?? [])
+            const imageItem = clipboardItems.find((item) => item.type.startsWith('image/'))
+
+            if (!imageItem) {
+                return
+            }
+
+            const pastedFile = imageItem.getAsFile()
+
+            if (!pastedFile) {
+                return
+            }
+
+            event.preventDefault()
+            void insertImageAtCursor(pastedFile, codemirror)
+        }
+
+        codemirror.on('paste', handlePaste)
+
+        return () => {
+            codemirror.off('paste', handlePaste)
+        }
+    }, [isUploadingImage])
+
+    useEffect(() => {
+        const handleWindowPaste = (event: ClipboardEvent) => {
+            const codemirror = codemirrorRef.current
+
+            if (!codemirror || !codemirror.hasFocus() || isUploadingImage) {
+                return
+            }
+
+            const clipboardItems = Array.from(event.clipboardData?.items ?? [])
+            const imageItem = clipboardItems.find((item) => item.type.startsWith('image/'))
+
+            if (!imageItem) {
+                return
+            }
+
+            const pastedFile = imageItem.getAsFile()
+
+            if (!pastedFile) {
+                return
+            }
+
+            event.preventDefault()
+            event.stopPropagation()
+            void insertImageAtCursor(pastedFile, codemirror)
+        }
+
+        window.addEventListener('paste', handleWindowPaste, true)
+
+        return () => {
+            window.removeEventListener('paste', handleWindowPaste, true)
+        }
+    }, [isUploadingImage])
 
     const options: Options = useMemo(() => {
         return {
