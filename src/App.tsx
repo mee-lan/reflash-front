@@ -6,6 +6,7 @@ import { store } from "./store/store"
 import { ProtectedRoute, Layout } from "./components"
 import { Dashboard, ClassView, Progress } from "./pages/student"
 import DeckStudy from "./pages/student/DeckStudy"
+import DeckExport from "./pages/student/DeckExport"
 import { TeacherDashboard, TeacherClassView, TeacherDeckView, TeacherStudents, TeacherInsights } from "./pages/teacher"
 import {
   AdminDashboard,
@@ -92,6 +93,7 @@ function AppRoutes() {
           }
         />
         <Route path="/study/:deckId" element={<ProtectedRoute allowedRoles={['STUDENT']}><DeckStudy /></ProtectedRoute>} />
+        <Route path="/export/:deckId" element={<ProtectedRoute allowedRoles={['STUDENT']}><DeckExport /></ProtectedRoute>} />
 
         <Route
           path="/teacher/deck/:deckId"

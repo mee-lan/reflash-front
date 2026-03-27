@@ -1,4 +1,4 @@
-import { BookOpen, Brain, Clock, Calendar, TrendingUp } from 'lucide-react';
+import { BookOpen, Brain, Calendar, TrendingUp } from 'lucide-react';
 
 export default function Help() {
     return (
