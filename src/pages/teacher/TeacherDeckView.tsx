@@ -362,7 +362,7 @@ export default function TeacherDeckView() {
                         <p className="text-neutral-600 mb-3">{deck.description}</p>
                     )}
                     <div className="flex items-center gap-4 text-sm text-neutral-600">
-                        <span>{cards.length} flashcards</span>
+                        <span>{cards.length} {cards.length === 1 ? 'flashcard' : 'flashcards'}</span>
                         <span>•</span>
                         <span>Created {new Date(deck.createdAt).toLocaleDateString()}</span>
                     </div>

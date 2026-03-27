@@ -115,7 +115,7 @@ export default function TeacherClassView() {
                     )}
                     <div className="flex items-center gap-4 text-sm text-neutral-600">
                         <span>Code: <span className="font-mono font-bold">{classData.classCode}</span></span>
-                        <span>{classData.studentCount} students</span>
+                        <span>{classData.studentCount} {classData.studentCount === 1 ? 'student' : 'students'}</span>
                     </div>
                 </div>
 

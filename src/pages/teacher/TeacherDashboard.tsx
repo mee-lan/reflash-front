@@ -325,8 +325,8 @@ function TeacherClassCard({ classData }: { classData: Class }) {
 
                     <div className="flex items-center justify-between text-sm mb-3">
                         <div className="flex items-center gap-4">
-                            <span className="text-neutral-600">{classData.deckCount} decks</span>
-                            <span className="text-neutral-600">{classData.studentCount} students</span>
+                            <span className="text-neutral-600">{classData.deckCount} {classData.deckCount === 1 ? 'deck' : 'decks'}</span>
+                            <span className="text-neutral-600">{classData.studentCount} {classData.studentCount === 1 ? 'student' : 'students'}</span>
                         </div>
                     </div>
 
