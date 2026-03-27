@@ -502,6 +502,15 @@ export const deckAPI = {
     cacheDecks([...getCachedDecks(), newDeck])
     return newDeck
   },
+
+  resetDeck: async (deckId: number): Promise<void> => {
+    const role = getCurrentRole()
+    if (role === 'TEACHER') {
+      throw new Error('Teachers cannot reset decks')
+    }
+    
+    await apiClient.post(`/api/student/reset-deck?deckId=${deckId}`)
+  },
 }
 
 export const flashcardAPI = {

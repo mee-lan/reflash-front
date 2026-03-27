@@ -1,8 +1,11 @@
 import type { Deck } from "../types";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
-import type { RootState } from "../store/store";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "../store/store";
 import RelativeTime from "./RelativeTime";
+import { deckAPI } from "../services/api";
+import { fetchProgressStats } from "../store/progressSlice";
+import { useState } from "react";
 
 interface DeckCardProps {
     deck: Deck
@@ -10,6 +13,8 @@ interface DeckCardProps {
 
 export default function DeckCard({ deck }: DeckCardProps) {
     const navigate = useNavigate();
+    const dispatch = useDispatch<AppDispatch>();
+    const [isResetting, setIsResetting] = useState(false);
 
     // Pull the stats specific to this deck from Redux
     const deckStats = useSelector((state: RootState) => state.progress.byDeck[deck.id]);
@@ -19,6 +24,26 @@ export default function DeckCard({ deck }: DeckCardProps) {
     const newCards = deckStats?.newCards || 0;
     const learningCards = deckStats?.learningCards || 0;
     const totalCards = deckStats?.totalCards || deck.cardCount || 0;
+
+    const handleReset = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (!window.confirm("Are you sure you want to reset your progress for this deck? All cards will become new cards again.")) {
+            return;
+        }
+
+        try {
+            setIsResetting(true);
+            await deckAPI.resetDeck(deck.id);
+            dispatch(fetchProgressStats());
+        } catch (error) {
+            console.error("Failed to reset deck:", error);
+            alert("Failed to reset deck. Please try again.");
+        } finally {
+            setIsResetting(false);
+        }
+    };
 
     return (
         <div
@@ -41,6 +66,16 @@ export default function DeckCard({ deck }: DeckCardProps) {
 
                         {/* Status Badge & Actions */}
                         <div className="flex items-center gap-2 ml-2 shrink-0">
+                            <button
+                                onClick={handleReset}
+                                disabled={isResetting}
+                                className="p-1.5 bg-orange-50 text-orange-600 hover:bg-orange-100 hover:text-orange-700 rounded-md border border-orange-200 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0 disabled:opacity-50"
+                                title="Reset Progress"
+                            >
+                                <svg className={`w-4 h-4 ${isResetting ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                            </button>
                             <button
                                 onClick={(e) => {
                                     e.preventDefault();
