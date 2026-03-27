@@ -1,16 +1,31 @@
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import type { AppDispatch, RootState } from "../store/store";
 import { useState } from "react";
 import { logout } from "../store/authSlice";
 
 export default function Header() {
     const navigate = useNavigate()
+    const location = useLocation()
+    const [searchParams, setSearchParams] = useSearchParams()
     const dispatch = useDispatch<AppDispatch>()
     const user = useSelector((state: RootState) => state.auth.user)
     const [showUserMenu, setShowUserMenu] = useState(false)
     const [showNotifications, setShowNotifications] = useState(false)
     const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true)
+
+    const searchQuery = searchParams.get('search') || ''
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        const newSearchParams = new URLSearchParams(searchParams);
+        if (value) {
+            newSearchParams.set('search', value);
+        } else {
+            newSearchParams.delete('search');
+        }
+        setSearchParams(newSearchParams, { replace: true });
+    }
 
     const displayName = user ? `${user.firstName} ${user.lastName}` : 'User'
     const subtitle = user?.role === 'TEACHER'
@@ -27,7 +42,7 @@ export default function Header() {
             : ''
     const searchPlaceholder = user?.role === 'ADMINISTRATOR'
         ? 'Search admin tools...'
-        : 'Search classes, decks...'
+        : 'Search classes...'
     const initials = user
         ? `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toUpperCase()
         : 'U'
@@ -57,6 +72,8 @@ export default function Header() {
                             <input
                                 type="text"
                                 placeholder={searchPlaceholder}
+                                value={searchQuery}
+                                onChange={handleSearchChange}
                                 className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                             />
                         </div>
