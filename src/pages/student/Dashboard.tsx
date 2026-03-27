@@ -143,11 +143,11 @@ export default function Dashboard() {
             
             <div className="card p-5 border-l-4 border-l-emerald-500 hover:-translate-y-1 transition-transform duration-300">
               <div className="flex justify-between items-start mb-2">
-                <p className="text-neutral-500 text-sm font-medium">Average Ease</p>
-                <div className="p-2 bg-emerald-50 rounded-lg"><TrendingUp className="w-4 h-4 text-emerald-500" /></div>
+                <p className="text-neutral-500 text-sm font-medium">Currently Learning</p>
+                <div className="p-2 bg-emerald-50 rounded-lg"><Brain className="w-4 h-4 text-emerald-500" /></div>
               </div>
               <h3 className="text-2xl font-bold text-neutral-900">
-                {(overallStats.averageEase / 10).toFixed(1)}%
+                {overallStats.learningCards}
               </h3>
             </div>
 
