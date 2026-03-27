@@ -1,5 +1,5 @@
-import { useParams, Link } from "react-router-dom"
-import { useEffect, useState } from "react"
+import { useParams, Link, useSearchParams } from "react-router-dom"
+import { useEffect, useState, useMemo } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import type { Class, Deck } from "../../types"
 import { DeckCard } from "../../components"
@@ -14,6 +14,8 @@ export default function ClassView() {
     const [loading, setLoading] = useState(true)
     const dispatch = useDispatch<AppDispatch>()
     const progressLoaded = useSelector((state: RootState) => state.progress.lastFetched)
+    const [searchParams] = useSearchParams()
+    const searchQuery = searchParams.get('search')?.toLowerCase() || ''
 
     useEffect(() => {
         if (!progressLoaded) {
@@ -44,6 +46,14 @@ export default function ClassView() {
         fetchData()
     }, [classId])
 
+
+    const filteredDecks = useMemo(() => {
+        if (!searchQuery) return decks;
+        return decks.filter(deck => 
+            deck.title.toLowerCase().includes(searchQuery) || 
+            (deck.description && deck.description.toLowerCase().includes(searchQuery))
+        );
+    }, [decks, searchQuery]);
 
     if (loading) {
         return (
@@ -93,15 +103,17 @@ export default function ClassView() {
             <div>
                 <h2 className="mb-6">Study Decks</h2>
 
-                {decks.length === 0 ? (
+                {filteredDecks.length === 0 ? (
                     <div className="card">
                         <div className="card-body text-center py-12">
-                            <p className="text-neutral-600">No decks available yet</p>
+                            <p className="text-neutral-600">
+                                {searchQuery ? 'No decks match your search' : 'No decks available yet'}
+                            </p>
                         </div>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {decks.map(deck => (
+                        {filteredDecks.map(deck => (
                             <DeckCard key={deck.id} deck={deck} />
                         ))}
                     </div>

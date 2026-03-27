@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useState, useMemo } from 'react'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { classAPI, deckAPI } from '../../services/api'
 import type { Class, Deck, StudentUser } from '../../types'
 import { TeacherDeckCard } from '../../components'
@@ -13,6 +13,8 @@ export default function TeacherClassView() {
     const [showCreateDeckModal, setShowCreateDeckModal] = useState(false)
     const [deckFormData, setDeckFormData] = useState({ title: '', description: '' })
     const [activeTab, setActiveTab] = useState<'decks' | 'students'>('decks')
+    const [searchParams] = useSearchParams()
+    const searchQuery = searchParams.get('search')?.toLowerCase() || ''
 
     useEffect(() => {
         const fetchClassData = async () => {
@@ -51,6 +53,23 @@ export default function TeacherClassView() {
 
         }
     }
+
+    const filteredDecks = useMemo(() => {
+        if (!searchQuery) return decks;
+        return decks.filter(deck => 
+            deck.title.toLowerCase().includes(searchQuery) || 
+            (deck.description && deck.description.toLowerCase().includes(searchQuery))
+        );
+    }, [decks, searchQuery]);
+
+    const filteredStudents = useMemo(() => {
+        if (!searchQuery) return students;
+        return students.filter(student => 
+            student.firstName.toLowerCase().includes(searchQuery) || 
+            student.lastName.toLowerCase().includes(searchQuery) ||
+            (student.roll && student.roll.toLowerCase().includes(searchQuery))
+        );
+    }, [students, searchQuery]);
 
     if (loading) {
         return (
@@ -138,7 +157,7 @@ export default function TeacherClassView() {
             {/* Tab Content */}
             {activeTab === 'decks' ? (
                 <div>
-                    {decks.length === 0 ? (
+                    {filteredDecks.length === 0 ? (
                         <div className="card">
                             <div className="card-body text-center py-12">
                                 <div className="inline-flex items-center justify-center w-16 h-16 bg-neutral-100 rounded-full mb-4">
@@ -146,19 +165,25 @@ export default function TeacherClassView() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                                     </svg>
                                 </div>
-                                <h3 className="text-lg font-semibold text-neutral-900 mb-2">No decks yet</h3>
-                                <p className="text-neutral-600 mb-6">Create your first deck to add flashcards</p>
-                                <button
-                                    onClick={() => setShowCreateDeckModal(true)}
-                                    className="btn-primary"
-                                >
-                                    Create Deck
-                                </button>
+                                <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                                    {searchQuery ? 'No decks match your search' : 'No decks yet'}
+                                </h3>
+                                <p className="text-neutral-600 mb-6">
+                                    {searchQuery ? 'Try adjusting your search terms' : 'Create your first deck to add flashcards'}
+                                </p>
+                                {!searchQuery && (
+                                    <button
+                                        onClick={() => setShowCreateDeckModal(true)}
+                                        className="btn-primary"
+                                    >
+                                        Create Deck
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {decks.map(deck => (
+                            {filteredDecks.map(deck => (
                                 <TeacherDeckCard key={deck.id} deck={deck} />
                             ))}
                         </div>
@@ -166,15 +191,19 @@ export default function TeacherClassView() {
                 </div>
             ) : (
                 <div className="card overflow-hidden">
-                    {students.length === 0 ? (
+                    {filteredStudents.length === 0 ? (
                         <div className="card-body text-center py-12">
                             <div className="inline-flex items-center justify-center w-16 h-16 bg-neutral-100 rounded-full mb-4">
                                 <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                 </svg>
                             </div>
-                            <h3 className="text-lg font-semibold text-neutral-900 mb-2">No students enrolled</h3>
-                            <p className="text-neutral-600">Students assigned to this class will appear here.</p>
+                            <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                                {searchQuery ? 'No students match your search' : 'No students enrolled'}
+                            </h3>
+                            <p className="text-neutral-600">
+                                {searchQuery ? 'Try adjusting your search terms' : 'Students assigned to this class will appear here.'}
+                            </p>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
@@ -187,7 +216,7 @@ export default function TeacherClassView() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-neutral-200">
-                                    {students.map((student) => (
+                                    {filteredStudents.map((student) => (
                                         <tr key={student.id} className="hover:bg-neutral-50/50 transition-colors">
                                             <td className="py-3 px-6">
                                                 <div className="font-medium text-neutral-900">

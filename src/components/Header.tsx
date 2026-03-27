@@ -40,9 +40,13 @@ export default function Header() {
         : user
             ? `Roll ${user.roll} • ${user.academicYear}`
             : ''
-    const searchPlaceholder = user?.role === 'ADMINISTRATOR'
-        ? 'Search admin tools...'
-        : 'Search classes...'
+    const getSearchPlaceholder = () => {
+        if (user?.role === 'ADMINISTRATOR') return 'Search admin tools...'
+        if (location.pathname.includes('/teacher/class/')) return 'Search decks, students...'
+        if (location.pathname.includes('/class/')) return 'Search decks...'
+        return 'Search classes...'
+    }
+    const searchPlaceholder = getSearchPlaceholder()
     const initials = user
         ? `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toUpperCase()
         : 'U'
