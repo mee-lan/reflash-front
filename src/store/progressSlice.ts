@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { classAPI, deckAPI, flashcardAPI } from '../services/api'
 import type { FlashCard } from '../types'
+import { Scheduler } from '../services/scheduler'
 
 export interface ProgressStats {
   totalCards: number
@@ -12,6 +13,7 @@ export interface ProgressStats {
   totalLapses: number
   averageEase: number
   dueToday: number
+  nextDue: number | null
 }
 
 interface ProgressState {
@@ -53,13 +55,31 @@ export const fetchProgressStats = createAsyncThunk(
           const deckToday = Math.floor((nowSeconds - (deck.crt || 0)) / 86400)
           
           // Calculate due status
+          let nextDue: number | null = null
+
           const cardsWithDue = cards.map(c => {
             let isDue = false
             if (c.queue === "REVIEW" && c.due <= deckToday) {
               isDue = true
-            } else if (c.queue === "LEARNING" && c.due <= nowSeconds) {
+            } else if (c.queue === "LEARNING" && c.due <= nowSeconds + Scheduler.COLLAPSE_TIME) {
               isDue = true
             }
+
+            if (c.queue === "LEARNING" || c.queue === "REVIEW") {
+              let cardDueTimestamp = 0
+              if (c.queue === "LEARNING") {
+                cardDueTimestamp = c.due
+              } else if (c.queue === "REVIEW") {
+                cardDueTimestamp = (deck.crt || 0) + c.due * 86400
+              }
+
+              if (cardDueTimestamp > nowSeconds + Scheduler.COLLAPSE_TIME) {
+                if (nextDue === null || cardDueTimestamp < nextDue) {
+                  nextDue = cardDueTimestamp
+                }
+              }
+            }
+
             return { ...c, isDue }
           })
 
@@ -85,7 +105,8 @@ export const fetchProgressStats = createAsyncThunk(
             totalReps,
             totalLapses,
             averageEase,
-            dueToday
+            dueToday,
+            nextDue
           }
 
           allCards = [...allCards, ...cardsWithDue]
@@ -108,6 +129,15 @@ export const fetchProgressStats = createAsyncThunk(
 
       const dueToday = allCards.filter(c => (c as any).isDue).length
 
+      let overallNextDue: number | null = null
+      Object.values(deckStatsMap).forEach(stats => {
+        if (stats.nextDue !== null) {
+          if (overallNextDue === null || stats.nextDue < overallNextDue) {
+            overallNextDue = stats.nextDue
+          }
+        }
+      })
+
       const overallStats: ProgressStats = {
         totalCards: allCards.length,
         newCards,
@@ -117,7 +147,8 @@ export const fetchProgressStats = createAsyncThunk(
         totalReps,
         totalLapses,
         averageEase,
-        dueToday
+        dueToday,
+        nextDue: overallNextDue
       }
 
       return {

@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams } from "react-router-dom";
 import ClassCard from "../../components/ClassCard";
+import { RelativeTime } from "../../components";
 import type { Class } from "../../types";
 import { classAPI } from "../../services/api";
 import type { AppDispatch, RootState } from "../../store/store";
@@ -126,12 +127,18 @@ export default function Dashboard() {
               <h3 className="text-2xl font-bold text-neutral-900">{overallStats.totalCards}</h3>
             </div>
             
-            <div className="card p-5 border-l-4 border-l-amber-500 hover:-translate-y-1 transition-transform duration-300">
+            <div className="card p-5 border-l-4 border-l-amber-500 hover:-translate-y-1 transition-transform duration-300 relative group">
               <div className="flex justify-between items-start mb-2">
                 <p className="text-neutral-500 text-sm font-medium">Due Today</p>
                 <div className="p-2 bg-amber-50 rounded-lg"><Calendar className="w-4 h-4 text-amber-500" /></div>
               </div>
               <h3 className="text-2xl font-bold text-neutral-900">{overallStats.dueToday}</h3>
+              {overallStats.nextDue !== null && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                  Next session: <RelativeTime timestampSeconds={overallStats.nextDue} />
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-neutral-900"></div>
+                </div>
+              )}
             </div>
             
             <div className="card p-5 border-l-4 border-l-emerald-500 hover:-translate-y-1 transition-transform duration-300">

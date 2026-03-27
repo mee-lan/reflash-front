@@ -1,6 +1,28 @@
 import type { FlashCard as Flashcard } from '../types';
 import seedrandom from 'seedrandom';
 
+export function formatNextDue(timestampSeconds: number): string {
+  const now = Math.floor(Date.now() / 1000);
+  const diff = timestampSeconds - now;
+
+  if (diff <= 0) return "now";
+
+  const minutes = Math.floor(diff / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) {
+      return `in ${days} day${days > 1 ? 's' : ''}`;
+  }
+  if (hours > 0) {
+      return `in ${hours} hr${hours > 1 ? 's' : ''}`;
+  }
+  if (minutes > 0) {
+      return `in ${minutes} min${minutes > 1 ? 's' : ''}`;
+  }
+  return "in less than a minute";
+}
+
 class Scheduler {
   private deckCreatedAt: number;
   private flashcards: Flashcard[];
@@ -18,7 +40,7 @@ class Scheduler {
   private lrnCutoff = 0;
 
   //The learn ahead limit in seconds
-  private static COLLAPSE_TIME = 1200;
+  public static COLLAPSE_TIME = 1200;
 
   //Maximum number of new cards to introduce per day
   private static NEW_CARDS_PER_DAY = 20;
@@ -367,6 +389,31 @@ class Scheduler {
       reviewCount,
       totalLeft: newCount + learningCount + reviewCount
     };
+  }
+
+  public getNextDueDate(): number | null {
+    let nextDue: number | null = null;
+    const now = Math.floor(Date.now() / 1000);
+    const cutoff = now + Scheduler.COLLAPSE_TIME;
+
+    for (const card of this.flashcards) {
+      if (card.queue === 'LEARNING' || card.queue === 'REVIEW') {
+          let cardDueTimestamp = 0;
+          if (card.queue === 'LEARNING') {
+              cardDueTimestamp = card.due;
+          } else if (card.queue === 'REVIEW') {
+              // card.due is days since creation
+              cardDueTimestamp = this.deckCreatedAt + card.due * 86400;
+          }
+
+          if (cardDueTimestamp > cutoff) {
+              if (nextDue === null || cardDueTimestamp < nextDue) {
+                  nextDue = cardDueTimestamp;
+              }
+          }
+      }
+    }
+    return nextDue;
   }
 
   // =====================================================================

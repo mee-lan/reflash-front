@@ -2,6 +2,7 @@ import type { Deck } from "../types";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import type { RootState } from "../store/store";
+import RelativeTime from "./RelativeTime";
 
 interface DeckCardProps {
     deck: Deck
@@ -36,10 +37,18 @@ export default function DeckCard({ deck }: DeckCardProps) {
                             )}
                         </div>
 
-                        {/* Show Due Today explicitly if there are any */}
-                        {dueToday > 0 && (
+                        {/* Status Badge */}
+                        {(dueToday + newCards) > 0 ? (
                             <span className="badge badge-error ml-2 shrink-0">
-                                {dueToday} due
+                                {dueToday + newCards} due
+                            </span>
+                        ) : deckStats?.nextDue ? (
+                            <span className="badge bg-neutral-100 text-neutral-600 border-neutral-200 ml-2 shrink-0 font-medium text-xs px-2 py-1 rounded-full">
+                                Next: <RelativeTime timestampSeconds={deckStats.nextDue} />
+                            </span>
+                        ) : (
+                            <span className="badge bg-emerald-50 text-emerald-600 border-emerald-200 ml-2 shrink-0 font-medium text-xs px-2 py-1 rounded-full border">
+                                ✓ Done
                             </span>
                         )}
                     </div>

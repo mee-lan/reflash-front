@@ -3,7 +3,7 @@ import { useDispatch } from "react-redux";
 import type { Deck, FlashCard as FlashCardType } from "../../types";
 import { useNavigate, useParams, Link } from "react-router-dom";
 
-import { FlashCard } from "../../components";
+import { FlashCard, RelativeTime } from "../../components";
 import { deckAPI, flashcardAPI } from "../../services/api";
 import { Scheduler } from "../../services/scheduler";
 import { invalidateProgress } from "../../store/progressSlice";
@@ -27,6 +27,7 @@ export default function DeckStudy() {
     const [loading, setLoading] = useState(true)
     const [studyComplete, setStudyComplete] = useState(false)
     const [syncing, setSyncing] = useState(false)
+    const [nextDueTime, setNextDueTime] = useState<number | null>(null)
 
     // Refs for unmount syncing
     const deckRef = useRef<Deck | null>(null)
@@ -97,6 +98,7 @@ export default function DeckStudy() {
                         // update counts after first card is pulled (optional, usually counts don't drop until rated)
                         setSessionCounts(sched.getSessionCardCounts())
                     } else {
+                        setNextDueTime(sched.getNextDueDate())
                         setStudyComplete(true)
                     }
                 } else {
@@ -129,6 +131,7 @@ export default function DeckStudy() {
             if (nextCard) {
                 setCurrentCard(nextCard)
             } else {
+                setNextDueTime(schedulerRef.current.getNextDueDate())
                 setStudyComplete(true)
                 // Sync all updated cards to backend
                 await flashcardAPI.syncCards(deck.id, cards)
@@ -149,6 +152,9 @@ export default function DeckStudy() {
                 await flashcardAPI.syncCards(deck.id, cards)
                 syncNeededRef.current = false
                 dispatch(invalidateProgress()) // Tell Redux to refetch stats on next view
+            }
+            if (schedulerRef.current) {
+                setNextDueTime(schedulerRef.current.getNextDueDate())
             }
             setStudyComplete(true)
         } catch (error) {
@@ -177,43 +183,12 @@ export default function DeckStudy() {
         )
     }
 
-    // Study Complete Screen
-    if (studyComplete) {
-        return (
-            <div className="min-h-screen bg-neutral-50 center p-4">
-                <div className="card max-w-md w-full animate-scale-in">
-                    <div className="card-body text-center">
-                        <div className="w-20 h-20 bg-green-100 rounded-full center mx-auto mb-4">
-                            <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-
-                        <h2 className="mb-2">Study Session Complete! 🎉</h2>
-                        <p className="text-neutral-600 mb-6">
-                            You've reviewed {reviewedCount} cards in this deck for this session.
-                        </p>
-
-                        <div className="space-y-3">
-                            <button
-                                onClick={() => navigate(`/class/${deck.classId}`)}
-                                className="btn-ghost w-full"
-                            >
-                                Back to Class
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
     const progress = initialSessionCount > 0 
         ? Math.max(0, Math.min(100, ((initialSessionCount - sessionCounts.totalLeft) / initialSessionCount) * 100))
         : 100
 
     return (
-        <div className="min-h-screen bg-neutral-50">
+        <div className="min-h-screen bg-neutral-50 relative">
             {/* Header */}
             <div className="bg-white border-b border-neutral-200">
                 <div className="container-custom py-4">
@@ -289,6 +264,45 @@ export default function DeckStudy() {
                     <div className="text-center py-12">No cards due for review!</div>
                 )}
             </div>
+
+            {/* Study Complete Modal */}
+            {studyComplete && (
+                <div className="fixed inset-0 bg-black/50 center z-50 p-4">
+                    <div className="card max-w-md w-full animate-scale-in bg-white">
+                        <div className="card-body text-center">
+                            <div className="w-20 h-20 bg-green-100 rounded-full center mx-auto mb-4">
+                                <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+
+                            <h2 className="mb-2">Study Session Complete! 🎉</h2>
+                            <p className="text-neutral-600 mb-6">
+                                {reviewedCount > 0 
+                                    ? `You've reviewed ${reviewedCount} cards in this deck for this session.`
+                                    : "You've already studied everything for now!"}
+                            </p>
+
+                            {nextDueTime !== null && (
+                                <div className="bg-neutral-50 rounded-lg p-3 mb-6 inline-block w-full text-center border border-neutral-200">
+                                    <p className="text-sm text-neutral-600">
+                                        Next review available: <span className="font-semibold text-neutral-900"><RelativeTime timestampSeconds={nextDueTime} /></span>
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="space-y-3">
+                                <button
+                                    onClick={() => navigate(`/class/${deck.classId}`)}
+                                    className="btn-primary w-full"
+                                >
+                                    Back to Class
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

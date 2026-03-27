@@ -2,6 +2,7 @@ import { useEffect } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch, RootState } from "../../store/store"
 import { fetchProgressStats } from "../../store/progressSlice"
+import { RelativeTime } from "../../components"
 
 export default function Progress() {
   const dispatch = useDispatch<AppDispatch>()
@@ -69,6 +70,7 @@ export default function Progress() {
           value={stats.dueToday} 
           subtitle="Cards to review" 
           color="bg-orange-50 text-orange-700" 
+          tooltipNode={stats.nextDue !== null ? <>Next session: <RelativeTime timestampSeconds={stats.nextDue} /></> : undefined}
         />
         <StatCard 
           title="Total Reviews" 
@@ -143,9 +145,9 @@ export default function Progress() {
   )
 }
 
-function StatCard({ title, value, subtitle, color }: { title: string, value: number, subtitle: string, color: string }) {
+function StatCard({ title, value, subtitle, color, tooltipNode }: { title: string, value: number, subtitle: string, color: string, tooltipNode?: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-5 flex flex-col">
+    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-5 flex flex-col relative group">
       <div className={`w-10 h-10 rounded-lg center mb-4 ${color}`}>
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -154,6 +156,13 @@ function StatCard({ title, value, subtitle, color }: { title: string, value: num
       <span className="text-2xl font-bold text-neutral-900 mb-1">{value.toLocaleString()}</span>
       <span className="text-sm font-medium text-neutral-700">{title}</span>
       <span className="text-xs text-neutral-500 mt-1">{subtitle}</span>
+
+      {tooltipNode && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+          {tooltipNode}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-neutral-900"></div>
+        </div>
+      )}
     </div>
   )
 }
