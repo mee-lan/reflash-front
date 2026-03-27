@@ -458,6 +458,23 @@
   background: linear-gradient(to bottom, transparent, rgba(16, 185, 129, 0.3));
 }
 
+.react-resizable-handle-se {
+  right: 0;
+  bottom: 0;
+  cursor: nwse-resize;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background-color: rgba(16, 185, 129, 0.95);
+  background-image: none;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.react-resizable-handle-se:hover {
+  background-color: rgba(5, 150, 105, 1);
+}
+
 .editor-preview img,
 .editor-preview-side img,
 .markdown-content img {
@@ -540,4 +557,6 @@
   width: 100%;
   height: 100%;
   max-width: none;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
 }
