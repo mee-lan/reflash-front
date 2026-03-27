@@ -1,5 +1,5 @@
 import type { Deck } from "../types";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import type { RootState } from "../store/store";
 import RelativeTime from "./RelativeTime";
@@ -9,6 +9,8 @@ interface DeckCardProps {
 }
 
 export default function DeckCard({ deck }: DeckCardProps) {
+    const navigate = useNavigate();
+
     // Pull the stats specific to this deck from Redux
     const deckStats = useSelector((state: RootState) => state.progress.byDeck[deck.id]);
 
@@ -19,9 +21,9 @@ export default function DeckCard({ deck }: DeckCardProps) {
     const totalCards = deckStats?.totalCards || deck.cardCount || 0;
 
     return (
-        <Link
-            to={`/study/${deck.id}`}
-            className="block group"
+        <div
+            onClick={() => navigate(`/study/${deck.id}`)}
+            className="block group cursor-pointer h-full"
         >
             <div className="card hover:shadow-lg transition-all duration-300 h-full flex flex-col">
                 <div className="card-body flex-1 flex flex-col">
@@ -37,20 +39,36 @@ export default function DeckCard({ deck }: DeckCardProps) {
                             )}
                         </div>
 
-                        {/* Status Badge */}
-                        {(dueToday + newCards) > 0 ? (
-                            <span className="badge badge-error ml-2 shrink-0">
-                                {dueToday + newCards} due
-                            </span>
-                        ) : deckStats?.nextDue ? (
-                            <span className="badge bg-neutral-100 text-neutral-600 border-neutral-200 ml-2 shrink-0 font-medium text-xs px-2 py-1 rounded-full">
-                                Next: <RelativeTime timestampSeconds={deckStats.nextDue} />
-                            </span>
-                        ) : (
-                            <span className="badge bg-emerald-50 text-emerald-600 border-emerald-200 ml-2 shrink-0 font-medium text-xs px-2 py-1 rounded-full border">
-                                ✓ Done
-                            </span>
-                        )}
+                        {/* Status Badge & Actions */}
+                        <div className="flex items-center gap-2 ml-2 shrink-0">
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    navigate(`/export/${deck.id}`);
+                                }}
+                                className="p-1.5 bg-primary-50 text-primary-600 hover:bg-primary-100 hover:text-primary-700 rounded-md border border-primary-200 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
+                                title="Export to PDF"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                            </button>
+                            
+                            {(dueToday + newCards) > 0 ? (
+                                <span className="badge badge-error">
+                                    {dueToday + newCards} due
+                                </span>
+                            ) : deckStats?.nextDue ? (
+                                <span className="badge bg-neutral-100 text-neutral-600 border-neutral-200 font-medium text-xs px-2 py-1 rounded-full">
+                                    Next: <RelativeTime timestampSeconds={deckStats.nextDue} />
+                                </span>
+                            ) : (
+                                <span className="badge bg-emerald-50 text-emerald-600 border-emerald-200 font-medium text-xs px-2 py-1 rounded-full border">
+                                    ✓ Done
+                                </span>
+                            )}
+                        </div>
                     </div>
 
                     <div className="mt-auto pt-4">
@@ -88,6 +106,6 @@ export default function DeckCard({ deck }: DeckCardProps) {
                     </div>
                 </div>
             </div>
-        </Link>
+        </div>
     )
 }
