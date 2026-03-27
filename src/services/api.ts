@@ -105,6 +105,12 @@ type BackendAdminCourse = {
   students: StudentUser[]
 }
 
+type BackendTeacherCourseData = {
+  decks: BackendDeck[]
+  students: StudentUser[]
+  teachers: TeacherUser[]
+}
+
 function getStoredUser(): AuthUser | null {
   if (typeof window === 'undefined') {
     return null
@@ -267,7 +273,31 @@ function getDeckEndpoint(role: UserRole, courseId: number) {
   return `${routePrefix}?courseId=${courseId}`
 }
 
+export type TeacherCourseFullData = {
+  decks: Deck[]
+  students: StudentUser[]
+  teachers: TeacherUser[]
+}
+
 export const classAPI = {
+  getTeacherCourseFullData: async (classId: number): Promise<TeacherCourseFullData> => {
+    const { data } = await apiClient.get<ApiResponse<BackendTeacherCourseData>>(`/api/teacher/decks?courseId=${classId}`)
+    const courseData = data.mainBody
+    
+    if (!courseData) {
+      return { decks: [], students: [], teachers: [] }
+    }
+
+    const decks = (courseData.decks || []).map((deck) => mapDeckToDeckModel(deck, classId))
+    cacheDecks(decks)
+
+    return {
+      decks,
+      students: courseData.students || [],
+      teachers: courseData.teachers || []
+    }
+  },
+
   getAllClasses: async (): Promise<Class[]> => {
     const role = getCurrentRole()
     const { data } = await apiClient.get<ApiResponse<BackendCourse[]>>(getCourseEndpoint(role))
@@ -409,6 +439,12 @@ export const adminAPI = {
 export const deckAPI = {
   getClassDecks: async (classId: number): Promise<Deck[]> => {
     const role = getCurrentRole()
+    
+    if (role === 'TEACHER') {
+      const fullData = await classAPI.getTeacherCourseFullData(classId)
+      return fullData.decks
+    }
+
     const { data } = await apiClient.get<ApiResponse<BackendDeck[]>>(getDeckEndpoint(role, classId))
     const deckList = Array.isArray(data.mainBody) ? data.mainBody : []
     const decks = deckList.map((deck) => mapDeckToDeckModel(deck, classId))
@@ -441,12 +477,9 @@ export const deckAPI = {
       })
 
       // Refetch decks to get real deckId from backend
-      const { data } = await apiClient.get<ApiResponse<BackendDeck[]>>(
-        getDeckEndpoint('TEACHER', classId)
-      )
-      const deckList = Array.isArray(data.mainBody) ? data.mainBody : []
-      const decks = deckList.map((deck) => mapDeckToDeckModel(deck, classId))
-      cacheDecks(decks)
+      const fullData = await classAPI.getTeacherCourseFullData(classId)
+      const decks = fullData.decks
+      // cacheDecks is already called in getTeacherCourseFullData
 
       // Return the last one — newest
       return decks[decks.length - 1]
