@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FlashCard as FlashCardType } from '../types'
 import MarkdownViewer from './MarkdownViewer'
 
@@ -14,6 +14,48 @@ export default function FlashCard({ card, onRate }: FlashCardProps) {
         card.queue === 'NEW' ? 'New' : card.queue === 'LEARNING' ? 'Learning' : 'Review'
     const queueColor =
         card.queue === 'NEW' ? 'bg-blue-500' : card.queue === 'LEARNING' ? 'bg-orange-500' : 'bg-emerald-500'
+
+    useEffect(() => {
+        setIsFlipped(false)
+    }, [card.id])
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            const target = event.target as HTMLElement | null
+            const isTypingTarget = target && (
+                target.tagName === 'INPUT' ||
+                target.tagName === 'TEXTAREA' ||
+                target.isContentEditable
+            )
+
+            if (isTypingTarget) {
+                return
+            }
+
+            if (event.code === 'Space') {
+                event.preventDefault()
+                setIsFlipped((current) => !current)
+                return
+            }
+
+            if (!isFlipped) {
+                return
+            }
+
+            if (event.key === '1' || event.key === '2' || event.key === '3' || event.key === '4') {
+                event.preventDefault()
+                const ease = Number(event.key) as 1 | 2 | 3 | 4
+                onRate(ease)
+                setIsFlipped(false)
+            }
+        }
+
+        window.addEventListener('keydown', handleKeyDown)
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown)
+        }
+    }, [isFlipped, onRate])
 
     return (
         <div className="w-full px-4">
@@ -88,7 +130,7 @@ export default function FlashCard({ card, onRate }: FlashCardProps) {
                     {isFlipped && (
                         <div className="mt-6 animate-slide-up">
                             <p className="text-center text-sm text-neutral-600 mb-3">
-                                How well did you know this?
+                                How well did you know this? Use keys 1-4.
                             </p>
 
                             <div className="grid grid-cols-4 gap-3">
@@ -129,7 +171,7 @@ export default function FlashCard({ card, onRate }: FlashCardProps) {
 
                     {!isFlipped && (
                         <p className="text-center text-sm text-neutral-500 mt-4">
-                            💡 Click the card to see the answer
+                            💡 Click the card or press Space to see the answer
                         </p>
                     )}
                 </div>
