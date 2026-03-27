@@ -81,7 +81,9 @@ export interface FlashCard {
   lapses: number
   left: number
   due: number
+  dueFormatted?: string
   dirty?: boolean
+  crtFormatted?: string
 }
 
 export interface AdminCourseSummary {

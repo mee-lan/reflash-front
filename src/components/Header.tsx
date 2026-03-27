@@ -4,7 +4,7 @@ import type { AppDispatch, RootState } from "../store/store";
 import { useState } from "react";
 import { logout } from "../store/authSlice";
 
-export default function Header() {
+export default function Header({ toggleSidebar }: { toggleSidebar?: () => void }) {
     const navigate = useNavigate()
     const location = useLocation()
     const [searchParams, setSearchParams] = useSearchParams()
@@ -60,7 +60,20 @@ export default function Header() {
     return (
         <header className="bg-white border-b border-neutral-200 sticky top-0 z-40 h-20 flex items-center">
             <div className="px-6 w-full">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-4">
+                    {/* Sidebar Toggle */}
+                    {toggleSidebar && (
+                        <button 
+                            onClick={toggleSidebar}
+                            className="p-2 -ml-2 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
+                            title="Toggle Sidebar"
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+                    )}
+
                     {/* Search Bar */}
                     <div className="flex-1 max-w-xl">
                         <div className="relative">

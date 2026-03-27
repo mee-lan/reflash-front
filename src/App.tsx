@@ -6,6 +6,8 @@ import { store } from "./store/store"
 import { ProtectedRoute, Layout } from "./components"
 import { Dashboard, ClassView, Progress } from "./pages/student"
 import DeckStudy from "./pages/student/DeckStudy"
+import DeckBrowse from "./pages/student/DeckBrowse"
+import BrowseSelection from "./pages/student/BrowseSelection"
 import DeckExport from "./pages/student/DeckExport"
 import { TeacherDashboard, TeacherClassView, TeacherDeckView, TeacherStudents, TeacherInsights, TeacherQuizGeneration, TeacherQuizExport } from "./pages/teacher"
 import {
@@ -93,6 +95,20 @@ function AppRoutes() {
           }
         />
         <Route path="/study/:deckId" element={<ProtectedRoute allowedRoles={['STUDENT']}><DeckStudy /></ProtectedRoute>} />
+        <Route path="/browse" element={
+          <ProtectedRoute allowedRoles={['STUDENT']}>
+            <Layout>
+              <BrowseSelection />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/browse/:deckId" element={
+          <ProtectedRoute allowedRoles={['STUDENT']}>
+            <Layout>
+              <DeckBrowse />
+            </Layout>
+          </ProtectedRoute>
+        } />
         <Route path="/export/:deckId" element={<ProtectedRoute allowedRoles={['STUDENT']}><DeckExport /></ProtectedRoute>} />
 
         <Route

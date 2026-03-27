@@ -62,6 +62,7 @@ type BackendFlashCardNote = {
   additionalContext?: string
   tags?: string[]
   crt: number
+  crtFormatted?: string
 }
 
 type BackendFlashCard = {
@@ -75,6 +76,7 @@ type BackendFlashCard = {
   lapses: number
   left: number
   due: number
+  dueFormatted?: string
   dirty: boolean
 }
 
@@ -584,6 +586,8 @@ export const flashcardAPI = {
       lapses: card.lapses,
       left: card.left,
       due: card.due,
+      dueFormatted: card.dueFormatted,
+      crtFormatted: card.note.crtFormatted,
       dirty: card.dirty,
     }))
   },

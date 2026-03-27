@@ -1,3 +1,4 @@
+import { useState } from "react"
 import Header from "./Header"
 import Sidebar from "./Sidebar"
 
@@ -6,15 +7,17 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+
     return (
-        <div className="flex min-h-screen bg-neutral-50">
+        <div className="flex min-h-screen bg-neutral-50 overflow-hidden">
             {/* Sidebar */}
-            <Sidebar />
+            <Sidebar isOpen={isSidebarOpen} />
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col min-w-0">
                 {/* Header */}
-                <Header />
+                <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
 
                 {/* Page Content */}
                 <main className="flex-1">

@@ -5,7 +5,7 @@ import type { RootState } from "../store/store"
 import { classAPI } from "../services/api"
 import type { Class } from "../types"
 
-export default function Sidebar(){
+export default function Sidebar({ isOpen = true }: { isOpen?: boolean }){
     const location = useLocation()
     const user = useSelector((state: RootState) => state.auth.user)
     const [classes, setClasses] = useState<Class[]>([])
@@ -71,6 +71,7 @@ export default function Sidebar(){
         return [
             { to: '/dashboard', label: 'Dashboard', icon: 'home' },
             { to: '/progress', label: 'My Progress', icon: 'chart' },
+            { to: '/browse', label: 'Browse Cards', icon: 'book' },
         ]
     }
 
@@ -141,8 +142,10 @@ export default function Sidebar(){
     }
 
     
+  if (!isOpen) return null;
+
   return (
-    <aside className="w-64 bg-white border-r border-neutral-200 min-h-screen flex flex-col">
+    <aside className="w-64 shrink-0 bg-white border-r border-neutral-200 min-h-screen flex flex-col">
       {/* Logo */}
       <div className="px-6 h-20 flex items-center border-b border-neutral-200 shrink-0">
         <div className="flex items-center gap-3">
