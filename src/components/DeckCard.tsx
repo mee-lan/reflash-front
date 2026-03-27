@@ -55,7 +55,7 @@ export default function DeckCard({ deck }: DeckCardProps) {
                                     Learn: {learningCards}
                                 </span>
                                 <span className="bg-emerald-50 text-emerald-700 px-2 py-1 rounded-md">
-                                    Total Due: {dueToday}
+                                    Review Due: {dueToday}
                                 </span>
                             </div>
                         )}
