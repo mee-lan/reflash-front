@@ -105,7 +105,7 @@ export default function TeacherQuizExport() {
                         ref={printRef}
                     >
                         <div className="text-black prose prose-neutral max-w-none prose-p:my-2 prose-ol:my-2 prose-li:my-1">
-                            <MarkdownViewer content={processedMarkdown} />
+                            <MarkdownViewer content={processedMarkdown} enableImageResize={true} />
                         </div>
                     </div>
                 </div>

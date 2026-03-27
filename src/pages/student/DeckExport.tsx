@@ -142,17 +142,17 @@ export default function DeckExport() {
                         ref={printRef}
                     >
                         <div className="mb-8">
-                            <MarkdownViewer content={headerChunk} />
+                            <MarkdownViewer content={headerChunk} enableImageResize={true} />
                         </div>
                         
-                        <div className="flex flex-col gap-6">
+                        <div className="flex flex-col">
                             {cardChunks.map((chunk, idx) => (
                                 <div 
                                     key={idx} 
-                                    className="break-inside-avoid p-4 border border-neutral-200 rounded-lg bg-white shadow-sm"
+                                    className="break-inside-avoid py-6 border-b border-neutral-200 last:border-b-0"
                                     style={{ pageBreakInside: 'avoid' }}
                                 >
-                                    <MarkdownViewer content={chunk} />
+                                    <MarkdownViewer content={chunk} enableImageResize={true} />
                                 </div>
                             ))}
                         </div>
