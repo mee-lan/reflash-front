@@ -93,7 +93,20 @@ export default function FlashCard({ card, onRate }: FlashCardProps) {
                                         {/* Header */}
                                         <div className="flex items-center justify-between pb-3 border-b border-primary-200">
                                             <span className="text-sm font-medium text-primary-600">Question</span>
-                                            <span className="text-xs text-neutral-500">Click to reveal</span>
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className={`w-2 h-2 rounded-full ${
+                                                        card.queue === 'NEW' ? 'bg-blue-500' :
+                                                        card.queue === 'LEARNING' ? 'bg-orange-500' :
+                                                        'bg-emerald-500'
+                                                    }`}></div>
+                                                    <span className="text-xs font-medium text-neutral-500">
+                                                        {card.queue === 'NEW' ? 'New' : card.queue === 'LEARNING' ? 'Learning' : 'Review'}
+                                                    </span>
+                                                </div>
+                                                <span className="text-xs text-neutral-400">|</span>
+                                                <span className="text-xs text-neutral-400">Click to reveal</span>
+                                            </div>
                                         </div>
 
                                         {/* Content - Scrollable */}
@@ -118,7 +131,20 @@ export default function FlashCard({ card, onRate }: FlashCardProps) {
                                         {/* Header */}
                                         <div className="flex items-center justify-between pb-3 border-b border-green-200">
                                             <span className="text-sm font-medium text-green-600">Answer</span>
-                                            <span className="text-xs text-neutral-500">Click to flip back</span>
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className={`w-2 h-2 rounded-full ${
+                                                        card.queue === 'NEW' ? 'bg-blue-500' :
+                                                        card.queue === 'LEARNING' ? 'bg-orange-500' :
+                                                        'bg-emerald-500'
+                                                    }`}></div>
+                                                    <span className="text-xs font-medium text-neutral-500">
+                                                        {card.queue === 'NEW' ? 'New' : card.queue === 'LEARNING' ? 'Learning' : 'Review'}
+                                                    </span>
+                                                </div>
+                                                <span className="text-xs text-neutral-400">|</span>
+                                                <span className="text-xs text-neutral-400">Click to flip back</span>
+                                            </div>
                                         </div>
 
                                         {/* Content - Scrollable */}

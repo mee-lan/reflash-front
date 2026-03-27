@@ -19,6 +19,10 @@ export default function DeckStudy() {
     const schedulerRef = useRef<Scheduler | null>(null)
     const [currentCard, setCurrentCard] = useState<FlashCardType | null>(null)
     const [reviewedCount, setReviewedCount] = useState(0)
+    
+    // Session progress state
+    const [initialSessionCount, setInitialSessionCount] = useState(0)
+    const [sessionCounts, setSessionCounts] = useState({ newCount: 0, learningCount: 0, reviewCount: 0, totalLeft: 0 })
 
     const [loading, setLoading] = useState(true)
     const [studyComplete, setStudyComplete] = useState(false)
@@ -83,9 +87,15 @@ export default function DeckStudy() {
                     const sched = new Scheduler(fetchedDeck.id, fetchedDeck.crt, fetchedCards, 0)
                     schedulerRef.current = sched
 
+                    const initialCounts = sched.getSessionCardCounts()
+                    setSessionCounts(initialCounts)
+                    setInitialSessionCount(initialCounts.totalLeft)
+
                     const firstCard = sched.getCard()
                     if (firstCard) {
                         setCurrentCard(firstCard)
+                        // update counts after first card is pulled (optional, usually counts don't drop until rated)
+                        setSessionCounts(sched.getSessionCardCounts())
                     } else {
                         setStudyComplete(true)
                     }
@@ -115,6 +125,7 @@ export default function DeckStudy() {
             console.log(`Card ${currentCard.id} rated with ease ${ease}`)
 
             const nextCard = schedulerRef.current.getCard()
+            setSessionCounts(schedulerRef.current.getSessionCardCounts())
             if (nextCard) {
                 setCurrentCard(nextCard)
             } else {
@@ -197,8 +208,9 @@ export default function DeckStudy() {
         )
     }
 
-    const uncapProgress = (reviewedCount / cards.length) * 100
-    const progress = Math.min(100, uncapProgress || 0)
+    const progress = initialSessionCount > 0 
+        ? Math.max(0, Math.min(100, ((initialSessionCount - sessionCounts.totalLeft) / initialSessionCount) * 100))
+        : 100
 
     return (
         <div className="min-h-screen bg-neutral-50">
@@ -223,12 +235,26 @@ export default function DeckStudy() {
                         </div>
 
                         <div className="flex items-center gap-6">
-                            <div className="text-right">
+                            <div className="flex gap-4 mr-4">
+                                <div className="text-center">
+                                    <p className="text-sm font-bold text-blue-600">{sessionCounts.newCount}</p>
+                                    <p className="text-[10px] uppercase font-semibold text-neutral-500 tracking-wider">New</p>
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-sm font-bold text-orange-500">{sessionCounts.learningCount}</p>
+                                    <p className="text-[10px] uppercase font-semibold text-neutral-500 tracking-wider">Learn</p>
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-sm font-bold text-emerald-600">{sessionCounts.reviewCount}</p>
+                                    <p className="text-[10px] uppercase font-semibold text-neutral-500 tracking-wider">Due</p>
+                                </div>
+                            </div>
+                            <div className="text-right border-l border-neutral-200 pl-6">
                                 <p className="text-sm font-medium text-neutral-900">
-                                    Reviews: {reviewedCount}
+                                    {initialSessionCount - sessionCounts.totalLeft} / {initialSessionCount}
                                 </p>
                                 <p className="text-xs text-neutral-600">
-                                    Session progress
+                                    Cards done
                                 </p>
                             </div>
 

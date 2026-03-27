@@ -348,6 +348,27 @@ class Scheduler {
     return null;
   }
 
+  public getSessionCardCounts(): { newCount: number; learningCount: number; reviewCount: number; totalLeft: number } {
+    const newCount = this.flashcards.filter((card) => card.queue === 'NEW').length;
+    
+    const cutoff = Math.floor(Date.now() / 1000) + Scheduler.COLLAPSE_TIME;
+    // Count learning cards that are due within the session window
+    const learningCount = this.flashcards.filter(
+      (card) => card.queue === 'LEARNING' && card.due < cutoff
+    ).length;
+    
+    const reviewCount = this.flashcards.filter(
+      (card) => card.queue === 'REVIEW' && card.due <= this.today
+    ).length;
+    
+    return {
+      newCount,
+      learningCount,
+      reviewCount,
+      totalLeft: newCount + learningCount + reviewCount
+    };
+  }
+
   // =====================================================================
   //  CARD RETRIEVAL — internal logic
   // =====================================================================
