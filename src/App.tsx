@@ -14,6 +14,7 @@ import {
   AdminCreateStudentPage,
   AdminCreateTeacherPage,
 } from "./pages/admin"
+import Help from "./pages/Help"
 
 
 
@@ -160,6 +161,13 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+        <Route path="/help" element={
+          <ProtectedRoute allowedRoles={['STUDENT', 'TEACHER', 'ADMINISTRATOR']}>
+            <Layout>
+              <Help />
+            </Layout>
+          </ProtectedRoute>
+        } />
       </Routes>
     </BrowserRouter>
   )
