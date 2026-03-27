@@ -6,8 +6,7 @@ import { store } from "./store/store"
 import { ProtectedRoute, Layout } from "./components"
 import { Dashboard, ClassView, Progress } from "./pages/student"
 import DeckStudy from "./pages/student/DeckStudy"
-import { TeacherDashboard, TeacherClassView } from "./pages/teacher"
-import {TeacherDeckView} from "./pages/teacher"
+import { TeacherDashboard, TeacherClassView, TeacherDeckView, TeacherStudents, TeacherInsights } from "./pages/teacher"
 import {
   AdminDashboard,
   AdminCreateCoursePage,
@@ -49,6 +48,26 @@ function AppRoutes() {
             <ProtectedRoute allowedRoles={['TEACHER']}>
               <Layout>
                 <TeacherDashboard />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teacher/students"
+          element={
+            <ProtectedRoute allowedRoles={['TEACHER']}>
+              <Layout>
+                <TeacherStudents />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teacher/insights"
+          element={
+            <ProtectedRoute allowedRoles={['TEACHER']}>
+              <Layout>
+                <TeacherInsights />
               </Layout>
             </ProtectedRoute>
           }
