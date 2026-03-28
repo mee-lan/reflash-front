@@ -1,6 +1,6 @@
 import type { FlashCard, Deck } from "../../types";
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { aiAPI, deckAPI, flashcardAPI } from "../../services/api";
 import { AIGenerateButton, MarkdownEditor, MarkdownViewer } from "../../components";
 import { createPendingMarkdownImageToken, getMarkdownImageUrl, resolveMarkdownImageUrl, uploadMarkdownImage } from "../../services/supabaseStorage";
@@ -18,6 +18,7 @@ function extractMarkdownImageSources(content: string) {
 
 export default function TeacherDeckView() {
     const { deckId } = useParams<{ deckId: string }>();
+    const [searchParams] = useSearchParams();
     const [deck, setDeck] = useState<Deck | null>(null);
     const [cards, setCards] = useState<FlashCard[]>([]);
     const [loading, setLoading] = useState(true);
@@ -40,6 +41,7 @@ export default function TeacherDeckView() {
     const [aiDraftCards, setAIDraftCards] = useState<AIGeneratedCardDraft[]>([])
     const [resolvedImageUrls, setResolvedImageUrls] = useState<Record<string, string>>({})
     const pendingMarkdownImagesRef = useRef<Record<string, { file: File; previewUrl: string }>>({})
+    const activeCardId = Number(searchParams.get('cardId') || '')
 
     useEffect(() => {
         const fetchData = async () => {
@@ -113,6 +115,21 @@ export default function TeacherDeckView() {
             cancelled = true
         }
     }, [aiDraftCards, cardFormData.back, cardFormData.front, editFormData.back, editFormData.front, resolvedImageUrls])
+
+    useEffect(() => {
+        if (!activeCardId || cards.length === 0) {
+            return
+        }
+
+        const timer = window.setTimeout(() => {
+            document.getElementById(`teacher-card-${activeCardId}`)?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+            })
+        }, 150)
+
+        return () => window.clearTimeout(timer)
+    }, [activeCardId, cards])
 
     const handleCreateCard = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -404,7 +421,13 @@ export default function TeacherDeckView() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {cards.map((card, index) => (
-                            <div key={card.id} className="card hover:shadow-lg transition-all">
+                            <div
+                                id={`teacher-card-${card.id}`}
+                                key={card.id}
+                                className={`card hover:shadow-lg transition-all ${
+                                    activeCardId === card.id ? 'border-primary-500 ring-2 ring-primary-100' : ''
+                                }`}
+                            >
 
                                 <div className="card-body">
 

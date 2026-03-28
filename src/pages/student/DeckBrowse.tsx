@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { deckAPI, flashcardAPI } from "../../services/api";
 import MarkdownViewer from "../../components/MarkdownViewer";
 import type { Deck, FlashCard } from "../../types";
 
 export default function DeckBrowse() {
     const { deckId } = useParams<{ deckId: string }>();
+    const [searchParams] = useSearchParams();
     const [deck, setDeck] = useState<Deck | null>(null);
     const [cards, setCards] = useState<FlashCard[]>([]);
     const [loading, setLoading] = useState(true);
+    const activeCardId = Number(searchParams.get('cardId') || '');
 
     useEffect(() => {
         const fetchDeckData = async () => {
@@ -30,6 +32,21 @@ export default function DeckBrowse() {
             fetchDeckData();
         }
     }, [deckId]);
+
+    useEffect(() => {
+        if (!activeCardId || cards.length === 0) {
+            return;
+        }
+
+        const timer = window.setTimeout(() => {
+            document.getElementById(`student-card-${activeCardId}`)?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+            });
+        }, 150);
+
+        return () => window.clearTimeout(timer);
+    }, [activeCardId, cards]);
 
     if (loading) {
         return (
@@ -76,7 +93,13 @@ export default function DeckBrowse() {
             <div className="container-custom py-8">
                 <div className="max-w-3xl mx-auto flex flex-col gap-6">
                     {cards.map((card, idx) => (
-                        <div key={card.id || idx} className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
+                        <div
+                            id={`student-card-${card.id}`}
+                            key={card.id || idx}
+                            className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-all ${
+                                activeCardId === card.id ? 'border-primary-500 ring-2 ring-primary-100' : 'border-neutral-200'
+                            }`}
+                        >
                             <div className="p-6">
                                 <div className="mb-4 pb-4 border-b border-neutral-100">
                                     <h4 className="text-sm font-semibold text-neutral-500 mb-2 uppercase tracking-wider">Front</h4>

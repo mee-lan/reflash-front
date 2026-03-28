@@ -36,6 +36,47 @@ export interface ApiResponse<T> {
   mainBody?: T
 }
 
+export interface SearchCourseResult {
+  courseId: number
+  courseName: string
+  courseDescription?: string
+  deckCount?: number | null
+  teacherNames?: string[]
+}
+
+export interface SearchDeckResult {
+  deckId: number
+  deckName: string
+  deckDescription?: string
+  cardCount?: number | null
+}
+
+export interface SearchCardResult {
+  noteId: number
+  front: string
+  back: string
+  additionalContext?: string
+  tags?: string[]
+  crt?: number
+  crtFormatted?: string
+}
+
+export interface SearchTeacherResult extends TeacherUser {}
+
+export interface SearchStudentResult extends StudentUser {}
+
+export interface GlobalSearchResult {
+  courses: SearchCourseResult[]
+  decks: SearchDeckResult[]
+  notes: SearchCardResult[]
+}
+
+export interface GlobalSearchAdminResult {
+  courses: SearchCourseResult[]
+  teachers: SearchTeacherResult[]
+  students: SearchStudentResult[]
+}
+
 export interface Class {
   id: number
   name: string
