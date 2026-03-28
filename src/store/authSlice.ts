@@ -102,7 +102,16 @@ const initialState: AuthState = {
 const authSlice = createSlice({
   name: 'auth',
   initialState,
-  reducers: {},
+  reducers: {
+    updateUser(state, action: { payload: AuthUser }) {
+      state.user = action.payload
+      state.isAuthenticated = Boolean(action.payload)
+      persistAuthState({
+        isAuthenticated: true,
+        user: action.payload,
+      })
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(login.pending, (state) => {
@@ -160,3 +169,4 @@ const authSlice = createSlice({
 export default authSlice.reducer
 export type { AuthState }
 export { AUTH_STORAGE_KEY }
+export const { updateUser } = authSlice.actions

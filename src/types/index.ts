@@ -163,3 +163,16 @@ export interface StudentProfileFormData {
   academicYear: string
   roll: string
 }
+
+export interface StudentProfileEditData {
+  id: number
+  firstName: string
+  lastName: string
+  grade: string
+  section: string
+  roll: string
+  academicYear: string
+  password?: string
+  oldPassword?: string
+  newPassword?: string
+}
