@@ -5,6 +5,8 @@ import type {
   Class,
   Deck,
   FlashCard,
+  GlobalSearchAdminResult,
+  GlobalSearchResult,
   UserRole,
   TeacherUser,
   StudentUser,
@@ -801,6 +803,69 @@ export const aiAPI = {
       answer: card.back || '',
       hint: card.additionalContext || '',
     }))
+  },
+}
+
+function getGlobalSearchEndpoint(role: UserRole) {
+  if (role === 'TEACHER') {
+    return '/api/teacher/global-search'
+  }
+
+  if (role === 'ADMINISTRATOR') {
+    return '/api/admin/global-search'
+  }
+
+  return '/api/student/global-search'
+}
+
+export const globalSearchAPI = {
+  search: async (input: string): Promise<GlobalSearchResult | GlobalSearchAdminResult> => {
+    const role = getCurrentRole()
+    const { data } = await apiClient.get<ApiResponse<GlobalSearchResult | GlobalSearchAdminResult>>(
+      `${getGlobalSearchEndpoint(role)}?input=${encodeURIComponent(input)}`
+    )
+
+    if (role === 'ADMINISTRATOR') {
+      const result = data.mainBody as GlobalSearchAdminResult | undefined
+
+      return {
+        courses: Array.isArray(result?.courses) ? result.courses : [],
+        teachers: Array.isArray(result?.teachers) ? result.teachers : [],
+        students: Array.isArray(result?.students) ? result.students : [],
+      }
+    }
+
+    const result = data.mainBody as GlobalSearchResult | undefined
+
+    return {
+      courses: Array.isArray(result?.courses) ? result.courses : [],
+      decks: Array.isArray(result?.decks) ? result.decks : [],
+      notes: Array.isArray(result?.notes) ? result.notes : [],
+    }
+  },
+
+  resolveCardDestination: async (noteId: number): Promise<string> => {
+    const role = getCurrentRole()
+    const classes = await classAPI.getAllClasses()
+
+    for (const classData of classes) {
+      const decks =
+        role === 'TEACHER'
+          ? (await classAPI.getTeacherCourseFullData(classData.id)).decks
+          : await deckAPI.getClassDecks(classData.id)
+
+      for (const deck of decks) {
+        const cards = await flashcardAPI.getDeckCards(deck.id, role !== 'TEACHER')
+
+        if (cards.some((card) => card.id === noteId)) {
+          return role === 'TEACHER'
+            ? `/teacher/deck/${deck.id}?cardId=${noteId}`
+            : `/browse/${deck.id}?cardId=${noteId}`
+        }
+      }
+    }
+
+    throw new Error('Card not found in accessible decks')
   },
 }
 

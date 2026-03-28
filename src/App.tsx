@@ -16,6 +16,8 @@ import {
   AdminEditCoursePage,
   AdminCreateStudentPage,
   AdminCreateTeacherPage,
+  AdminStudentProfileView,
+  AdminTeacherProfileView,
 } from "./pages/admin"
 import Help from "./pages/Help"
 
@@ -195,6 +197,26 @@ function AppRoutes() {
             <ProtectedRoute allowedRoles={['ADMINISTRATOR']}>
               <Layout>
                 <AdminCreateTeacherPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/teachers/:teacherId"
+          element={
+            <ProtectedRoute allowedRoles={['ADMINISTRATOR']}>
+              <Layout>
+                <AdminTeacherProfileView />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/students/:studentId"
+          element={
+            <ProtectedRoute allowedRoles={['ADMINISTRATOR']}>
+              <Layout>
+                <AdminStudentProfileView />
               </Layout>
             </ProtectedRoute>
           }

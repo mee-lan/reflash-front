@@ -1,8 +1,93 @@
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useSearchParams, useLocation, Link } from "react-router-dom";
 import type { AppDispatch, RootState } from "../store/store";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { logout } from "../store/authSlice";
+import { globalSearchAPI } from "../services/api";
+import type {
+    GlobalSearchAdminResult,
+    GlobalSearchResult,
+    SearchCardResult,
+    SearchCourseResult,
+    SearchStudentResult,
+    SearchTeacherResult,
+} from "../types";
+
+type SearchItem =
+    | { id: string; kind: 'course'; title: string; subtitle: string; badge: 'Course'; payload: SearchCourseResult }
+    | { id: string; kind: 'deck'; title: string; subtitle: string; badge: 'Deck'; payload: { deckId: number } }
+    | { id: string; kind: 'card'; title: string; subtitle: string; badge: 'Card'; payload: SearchCardResult }
+    | { id: string; kind: 'teacher'; title: string; subtitle: string; badge: 'Teacher'; payload: SearchTeacherResult }
+    | { id: string; kind: 'student'; title: string; subtitle: string; badge: 'Student'; payload: SearchStudentResult }
+
+const ADMIN_TEACHER_STORAGE_PREFIX = 'reflash-admin-search-teacher-'
+const ADMIN_STUDENT_STORAGE_PREFIX = 'reflash-admin-search-student-'
+
+function mapSearchItems(
+    result: GlobalSearchResult | GlobalSearchAdminResult,
+    role: string
+): SearchItem[] {
+    const items: SearchItem[] = []
+
+    items.push(
+        ...(result.courses || []).map((course) => ({
+            id: `course-${course.courseId}`,
+            kind: 'course' as const,
+            title: course.courseName,
+            subtitle: course.courseDescription || `Course #${course.courseId}`,
+            badge: 'Course' as const,
+            payload: course,
+        }))
+    )
+
+    if (role === 'ADMINISTRATOR') {
+        const adminResult = result as GlobalSearchAdminResult
+
+        items.push(
+            ...(adminResult.teachers || []).map((teacher) => ({
+                id: `teacher-${teacher.id}`,
+                kind: 'teacher' as const,
+                title: `${teacher.firstName} ${teacher.lastName}`,
+                subtitle: `${teacher.username} • ${teacher.email}`,
+                badge: 'Teacher' as const,
+                payload: teacher,
+            })),
+            ...(adminResult.students || []).map((student) => ({
+                id: `student-${student.id}`,
+                kind: 'student' as const,
+                title: `${student.firstName} ${student.lastName}`,
+                subtitle: `Roll ${student.roll} • Grade ${student.grade}${student.section ? `-${student.section}` : ''}`,
+                badge: 'Student' as const,
+                payload: student,
+            }))
+        )
+
+        return items
+    }
+
+    const userResult = result as GlobalSearchResult
+
+    items.push(
+        ...(userResult.decks || []).map((deck) => ({
+            id: `deck-${deck.deckId}`,
+            kind: 'deck' as const,
+            title: deck.deckName,
+            subtitle: deck.deckDescription || `Deck #${deck.deckId}`,
+            badge: 'Deck' as const,
+            payload: { deckId: deck.deckId },
+        })),
+        ...(userResult.notes || []).map((note) => ({
+            id: `card-${note.noteId}`,
+            kind: 'card' as const,
+            title: note.front,
+            subtitle: note.back,
+            badge: 'Card' as const,
+            payload: note,
+        }))
+    )
+
+    return items
+}
 
 export default function Header({ toggleSidebar }: { toggleSidebar?: () => void }) {
     const navigate = useNavigate()
@@ -13,18 +98,125 @@ export default function Header({ toggleSidebar }: { toggleSidebar?: () => void }
     const [showUserMenu, setShowUserMenu] = useState(false)
     const [showNotifications, setShowNotifications] = useState(false)
     const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true)
+    const [searchItems, setSearchItems] = useState<SearchItem[]>([])
+    const [searchLoading, setSearchLoading] = useState(false)
+    const [searchError, setSearchError] = useState<string | null>(null)
+    const [showSearchDropdown, setShowSearchDropdown] = useState(false)
+    const [pendingItemId, setPendingItemId] = useState<string | null>(null)
+    const searchContainerRef = useRef<HTMLDivElement | null>(null)
 
     const searchQuery = searchParams.get('search') || ''
+
+    useEffect(() => {
+        const trimmedQuery = searchQuery.trim()
+
+        if (!trimmedQuery || !user?.role) {
+            setSearchItems([])
+            setSearchLoading(false)
+            setSearchError(null)
+            setShowSearchDropdown(false)
+            return
+        }
+
+        const timer = window.setTimeout(async () => {
+            try {
+                setSearchLoading(true)
+                setSearchError(null)
+                const result = await globalSearchAPI.search(trimmedQuery)
+                setSearchItems(mapSearchItems(result, user.role))
+                setShowSearchDropdown(true)
+            } catch (error) {
+                setSearchItems([])
+                setSearchError(error instanceof Error ? error.message : 'Search failed')
+                setShowSearchDropdown(true)
+            } finally {
+                setSearchLoading(false)
+            }
+        }, 250)
+
+        return () => window.clearTimeout(timer)
+    }, [searchQuery, user?.role])
+
+    useEffect(() => {
+        setShowSearchDropdown(false)
+    }, [location.pathname])
+
+    useEffect(() => {
+        const handleDocumentClick = (event: MouseEvent) => {
+            if (!searchContainerRef.current?.contains(event.target as Node)) {
+                setShowSearchDropdown(false)
+            }
+        }
+
+        document.addEventListener('mousedown', handleDocumentClick)
+        return () => document.removeEventListener('mousedown', handleDocumentClick)
+    }, [])
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         const newSearchParams = new URLSearchParams(searchParams);
         if (value) {
             newSearchParams.set('search', value);
+            setShowSearchDropdown(true)
         } else {
             newSearchParams.delete('search');
+            setSearchItems([])
+            setSearchError(null)
+            setShowSearchDropdown(false)
         }
         setSearchParams(newSearchParams, { replace: true });
+    }
+
+    const handleSearchSelect = async (item: SearchItem) => {
+        if (!user?.role) {
+            return
+        }
+
+        try {
+            setPendingItemId(item.id)
+            setShowSearchDropdown(false)
+
+            if (item.kind === 'course') {
+                navigate(
+                    user.role === 'TEACHER'
+                        ? `/teacher/class/${item.payload.courseId}`
+                        : user.role === 'ADMINISTRATOR'
+                            ? `/admin/courses/edit?courseId=${item.payload.courseId}`
+                            : `/class/${item.payload.courseId}`
+                )
+                return
+            }
+
+            if (item.kind === 'deck') {
+                navigate(user.role === 'TEACHER' ? `/teacher/deck/${item.payload.deckId}` : `/browse/${item.payload.deckId}`)
+                return
+            }
+
+            if (item.kind === 'card') {
+                navigate(await globalSearchAPI.resolveCardDestination(item.payload.noteId))
+                return
+            }
+
+            if (item.kind === 'teacher') {
+                window.sessionStorage.setItem(
+                    `${ADMIN_TEACHER_STORAGE_PREFIX}${item.payload.id}`,
+                    JSON.stringify(item.payload)
+                )
+                navigate(`/admin/teachers/${item.payload.id}`, { state: { profile: item.payload } })
+                return
+            }
+
+            window.sessionStorage.setItem(
+                `${ADMIN_STUDENT_STORAGE_PREFIX}${item.payload.id}`,
+                JSON.stringify(item.payload)
+            )
+            navigate(`/admin/students/${item.payload.id}`, { state: { profile: item.payload } })
+        } catch (error) {
+            setSearchError(error instanceof Error ? error.message : 'Unable to open result')
+            setShowSearchDropdown(true)
+        } finally {
+            setPendingItemId(null)
+        }
     }
 
     const displayName = user ? `${user.firstName} ${user.lastName}` : 'User'
@@ -41,10 +233,10 @@ export default function Header({ toggleSidebar }: { toggleSidebar?: () => void }
             ? `Roll ${user.roll} • ${user.academicYear}`
             : ''
     const getSearchPlaceholder = () => {
-        if (user?.role === 'ADMINISTRATOR') return 'Search admin tools...'
-        if (location.pathname.includes('/teacher/class/')) return 'Search decks, students...'
-        if (location.pathname.includes('/class/')) return 'Search decks...'
-        return 'Search classes...'
+        if (user?.role === 'ADMINISTRATOR') return 'Search courses, teachers, students...'
+        if (location.pathname.includes('/teacher/class/')) return 'Search courses, decks, cards...'
+        if (location.pathname.includes('/class/')) return 'Search courses, decks, cards...'
+        return 'Search courses, decks, cards...'
     }
     const searchPlaceholder = getSearchPlaceholder()
     const initials = user
@@ -52,7 +244,6 @@ export default function Header({ toggleSidebar }: { toggleSidebar?: () => void }
         : 'U'
 
     const handleLogout = async () => {
-
         await dispatch(logout())
         navigate(user?.role === 'ADMINISTRATOR' ? '/admin' : "/login")
     }
@@ -61,9 +252,8 @@ export default function Header({ toggleSidebar }: { toggleSidebar?: () => void }
         <header className="bg-white border-b border-neutral-200 sticky top-0 z-40 h-20 flex items-center">
             <div className="px-6 w-full">
                 <div className="flex items-center justify-between gap-4">
-                    {/* Sidebar Toggle */}
                     {toggleSidebar && (
-                        <button 
+                        <button
                             onClick={toggleSidebar}
                             className="p-2 -ml-2 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
                             title="Toggle Sidebar"
@@ -74,31 +264,60 @@ export default function Header({ toggleSidebar }: { toggleSidebar?: () => void }
                         </button>
                     )}
 
-                    {/* Search Bar */}
-                    <div className="flex-1 max-w-xl">
+                    <div className="flex-1 max-w-xl" ref={searchContainerRef}>
                         <div className="relative">
-                            <svg
-                                className="w-5 h-5 text-neutral-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-
                             <input
                                 type="text"
                                 placeholder={searchPlaceholder}
                                 value={searchQuery}
                                 onChange={handleSearchChange}
-                                className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                onFocus={() => {
+                                    if (searchQuery.trim()) {
+                                        setShowSearchDropdown(true)
+                                    }
+                                }}
+                                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                             />
+
+                            {showSearchDropdown && (
+                                <div className="absolute left-0 right-0 mt-2 max-h-96 overflow-y-auto rounded-xl border border-neutral-200 bg-white shadow-lg z-50">
+                                    {searchLoading && (
+                                        <div className="px-4 py-3 text-sm text-neutral-500">Searching...</div>
+                                    )}
+
+                                    {!searchLoading && searchError && (
+                                        <div className="px-4 py-3 text-sm text-red-600">{searchError}</div>
+                                    )}
+
+                                    {!searchLoading && !searchError && searchItems.length === 0 && (
+                                        <div className="px-4 py-3 text-sm text-neutral-500">No matching results</div>
+                                    )}
+
+                                    {!searchLoading && !searchError && searchItems.map((item) => (
+                                        <button
+                                            key={item.id}
+                                            type="button"
+                                            onClick={() => void handleSearchSelect(item)}
+                                            className="w-full border-b border-neutral-100 last:border-b-0 px-4 py-3 text-left hover:bg-neutral-50 transition-colors"
+                                            disabled={pendingItemId === item.id}
+                                        >
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <p className="truncate text-sm font-medium text-neutral-900">{item.title}</p>
+                                                    <p className="truncate text-xs text-neutral-500">{item.subtitle}</p>
+                                                </div>
+                                                <span className="shrink-0 rounded-full border border-primary-200 bg-primary-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-primary-700">
+                                                    {pendingItemId === item.id ? 'Opening' : item.badge}
+                                                </span>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    {/* Right Side - Notifications & User */}
                     <div className="flex items-center gap-4 ml-6">
-                        {/* Help Button */}
                         <Link
                             to="/help"
                             className="p-2 text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
@@ -109,9 +328,8 @@ export default function Header({ toggleSidebar }: { toggleSidebar?: () => void }
                             </svg>
                         </Link>
 
-                        {/* Notifications */}
                         <div className="relative">
-                            <button 
+                            <button
                                 onClick={() => {
                                     setShowNotifications(!showNotifications)
                                     setHasUnreadNotifications(false)
@@ -122,13 +340,11 @@ export default function Header({ toggleSidebar }: { toggleSidebar?: () => void }
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                                 </svg>
-                                {/* Notification Badge */}
                                 {hasUnreadNotifications && (
                                     <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                                 )}
                             </button>
 
-                            {/* Notifications Dropdown */}
                             {showNotifications && (
                                 <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-neutral-200 py-2 animate-slide-down">
                                     <div className="px-4 py-3 border-b border-neutral-200">
@@ -144,7 +360,6 @@ export default function Header({ toggleSidebar }: { toggleSidebar?: () => void }
                             )}
                         </div>
 
-                        {/* User Menu */}
                         <div className="relative">
                             <button
                                 onClick={() => {
@@ -170,7 +385,6 @@ export default function Header({ toggleSidebar }: { toggleSidebar?: () => void }
                                 </svg>
                             </button>
 
-                            {/* Dropdown Menu */}
                             {showUserMenu && (
                                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-neutral-200 py-2 animate-slide-down">
                                     <div className="px-4 py-3 border-b border-neutral-200">
