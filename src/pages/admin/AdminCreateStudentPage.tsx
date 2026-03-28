@@ -44,9 +44,6 @@ export default function AdminCreateStudentPage() {
     <div className="container-custom py-8">
       <div className="mb-8">
         <h1 className="mb-2">Create Student Profile</h1>
-        <p className="text-neutral-600">
-          Create a student account with the exact payload expected by `POST /api/admin/student-profile`.
-        </p>
       </div>
 
       {error && <div className="alert-error mb-6">{error}</div>}
@@ -130,17 +127,7 @@ export default function AdminCreateStudentPage() {
           </div>
         </div>
 
-        <div className="card">
-          <div className="card-body">
-            <h2 className="text-2xl font-semibold text-neutral-900 mb-4">Validation</h2>
-            <div className="space-y-3 text-sm text-neutral-600">
-              <p>All fields are required before submission.</p>
-              <p>Grade, section, academic year, and roll are sent unchanged to the backend.</p>
-              <p>Success and backend errors are shown inline to match the existing forms.</p>
-            </div>
-          </div>
-        </div>
-      </div>
+     </div>
     </div>
   )
 }

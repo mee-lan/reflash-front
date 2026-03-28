@@ -28,7 +28,6 @@ export default function AdminCourseEditor({
   mode,
   initialCourseId = null,
 }: AdminCourseEditorProps) {
-  const [courseIdInput, setCourseIdInput] = useState(initialCourseId ? String(initialCourseId) : '')
   const [resolvedCourseId, setResolvedCourseId] = useState<number | null>(initialCourseId)
   const [formData, setFormData] = useState<AdminCourseFormData>(emptyCourseForm)
   const [teacherOptions, setTeacherOptions] = useState<TeacherUser[]>([])
@@ -97,10 +96,10 @@ export default function AdminCourseEditor({
   }, [initialCourseId, mode])
 
   const handleLoadCourse = async (courseIdOverride?: number) => {
-    const parsedCourseId = courseIdOverride ?? Number(courseIdInput)
+    const parsedCourseId = courseIdOverride ?? initialCourseId ?? null
 
     if (!parsedCourseId) {
-      setError('Enter a valid course ID to load the edit form')
+      setError('Course not found')
       return
     }
 
@@ -110,7 +109,6 @@ export default function AdminCourseEditor({
       setSuccess(null)
       const course = await adminAPI.getCourseForEdit(parsedCourseId)
       setResolvedCourseId(course.courseId)
-      setCourseIdInput(String(course.courseId))
       setFormData({
         courseName: course.courseName,
         courseDescription: course.courseDescription,
@@ -216,14 +214,14 @@ export default function AdminCourseEditor({
   const pageTitle = mode === 'create' ? 'Create Course' : 'Edit Course'
   const pageDescription = mode === 'create'
     ? 'Create a course and assign teachers plus grade-specific students.'
-    : 'Load a course by ID, update assignments, and save the full course payload.'
+    : ''
 
   return (
     <div className="container-custom py-8">
       <div className="flex items-start justify-between gap-4 mb-8">
         <div>
           <h1 className="mb-2">{pageTitle}</h1>
-          <p className="text-neutral-600">{pageDescription}</p>
+          {pageDescription && <p className="text-neutral-600">{pageDescription}</p>}
         </div>
         <div className="card min-w-56">
           <div className="card-body py-4">
@@ -233,38 +231,6 @@ export default function AdminCourseEditor({
           </div>
         </div>
       </div>
-
-      {mode === 'edit' && (
-        <div className="card mb-6">
-          <div className="card-body">
-            <div className="flex flex-col md:flex-row gap-4 items-end">
-              <div className="form-group mb-0 flex-1">
-                <label htmlFor="courseId" className="form-label">Course ID</label>
-                <input
-                  id="courseId"
-                  type="number"
-                  min="1"
-                  value={courseIdInput}
-                  onChange={(event) => setCourseIdInput(event.target.value)}
-                  className="form-input"
-                  placeholder="Enter course ID from the backend"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => void handleLoadCourse()}
-                className="btn-outline"
-                disabled={loadingCourse}
-              >
-                {loadingCourse ? 'Loading...' : 'Load Course'}
-              </button>
-            </div>
-            {resolvedCourseId && (
-              <p className="form-help mt-3">Loaded course #{resolvedCourseId}. Changes below will submit to `PUT /api/admin/edit-course`.</p>
-            )}
-          </div>
-        </div>
-      )}
 
       {error && <div className="alert-error mb-6">{error}</div>}
       {success && <div className="alert-success mb-6">{success}</div>}
@@ -368,9 +334,6 @@ export default function AdminCourseEditor({
                 <h3 className="text-xl font-semibold text-neutral-900">Assign Students</h3>
                 <span className="badge badge-secondary">Grade {formData.grade || '...'}</span>
               </div>
-              <p className="text-sm text-neutral-600 mb-4">
-                Students load from `GET /api/admin/students-by-grade` for the selected grade.
-              </p>
 
               {!formData.grade ? (
                 <div className="alert-info">Enter a grade to fetch matching students.</div>
@@ -410,12 +373,6 @@ export default function AdminCourseEditor({
 
           <div className="card">
             <div className="card-body">
-              <h3 className="text-xl font-semibold text-neutral-900 mb-4">Submit</h3>
-              <p className="text-sm text-neutral-600 mb-4">
-                {mode === 'create'
-                  ? 'This submits `POST /api/admin/course` with teacher and student ID arrays.'
-                  : 'This submits the full `CourseEditDto` object back to the backend.'}
-              </p>
               <button
                 type="submit"
                 className="btn-primary w-full"

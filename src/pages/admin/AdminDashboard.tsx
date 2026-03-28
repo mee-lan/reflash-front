@@ -1,101 +1,81 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-
-const adminActions = [
-  {
-    title: 'Create Course',
-    description: 'Build a new course and assign teachers plus students by grade.',
-    to: '/admin/courses/create',
-  },
-  {
-    title: 'Edit Course',
-    description: 'Load a full course payload by ID and submit changes back to the backend.',
-    to: '/admin/courses/edit',
-  },
-  {
-    title: 'Create Student Profile',
-    description: 'Create a student profile from the admin panel with grade, section, and roll details.',
-    to: '/admin/students/create',
-  },
-  {
-    title: 'Create Teacher Profile',
-    description: 'Create teacher accounts with username, email, and password.',
-    to: '/admin/teachers/create',
-  },
-]
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { adminAPI } from '../../services/api'
+import type { AdminCourseSummary } from '../../types'
 
 export default function AdminDashboard() {
-  const navigate = useNavigate()
-  const [courseId, setCourseId] = useState('')
+  const [courses, setCourses] = useState<AdminCourseSummary[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleQuickEdit = (event: React.FormEvent) => {
-    event.preventDefault()
-
-    if (!courseId.trim()) {
-      return
+  useEffect(() => {
+    const loadCourses = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const fetchedCourses = await adminAPI.getAllCourses()
+        setCourses(fetchedCourses)
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : 'Failed to load courses')
+      } finally {
+        setLoading(false)
+      }
     }
 
-    navigate(`/admin/courses/edit?courseId=${encodeURIComponent(courseId)}`)
-  }
+    void loadCourses()
+  }, [])
 
   return (
     <div className="container-custom py-8">
       <div className="mb-8">
-        <h1 className="mb-2">Admin Dashboard</h1>
-        <p className="text-neutral-600">
-          Manage courses, teacher profiles, and student profiles from one place.
-        </p>
+        <h1 className="mb-2">All Courses</h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-        {adminActions.map((action) => (
-          <Link key={action.to} to={action.to} className="card hover:no-underline">
-            <div className="card-body h-full flex flex-col">
-              <p className="text-sm uppercase tracking-wide text-primary-600 font-semibold mb-2">Admin Tool</p>
-              <h3 className="text-xl font-semibold text-neutral-900 mb-3">{action.title}</h3>
-              <p className="text-neutral-600 flex-1">{action.description}</p>
-              <span className="mt-6 inline-flex items-center text-sm font-medium text-primary-600">
-                Open tool
-              </span>
-            </div>
-          </Link>
-        ))}
-      </div>
+      {error && <div className="alert-error mb-6">{error}</div>}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="card lg:col-span-2">
-          <div className="card-body">
-            <h2 className="text-2xl font-semibold text-neutral-900 mb-4">Quick Course Edit</h2>
-            <p className="text-neutral-600 mb-6">
-              The backend does not expose an admin course list endpoint, so course editing starts with a course ID.
-            </p>
-            <form onSubmit={handleQuickEdit} className="flex flex-col md:flex-row gap-4">
-              <input
-                type="number"
-                min="1"
-                value={courseId}
-                onChange={(event) => setCourseId(event.target.value)}
-                className="form-input flex-1"
-                placeholder="Enter course ID"
-              />
-              <button type="submit" className="btn-primary">
-                Load Course
-              </button>
-            </form>
-          </div>
+      {loading ? (
+        <div className="min-h-[240px] center">
+          <div className="spinner"></div>
         </div>
-
+      ) : courses.length === 0 ? (
         <div className="card">
-          <div className="card-body">
-            <h2 className="text-2xl font-semibold text-neutral-900 mb-4">Backend Contract</h2>
-            <div className="space-y-3 text-sm text-neutral-600">
-              <p>`POST /api/admin/course` expects teacher and student ID arrays.</p>
-              <p>`GET /api/admin/course-full` returns the full edit payload.</p>
-              <p>`PUT /api/admin/edit-course` expects the full course object including teacher and student DTO arrays.</p>
-            </div>
+          <div className="card-body text-center py-12">
+            <h2 className="text-xl font-semibold text-neutral-900 mb-2">No courses found</h2>
+            <p className="text-neutral-600">The backend returned an empty course list.</p>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {courses.map((course) => (
+            <Link
+              key={course.id}
+              to={`/admin/courses/edit?courseId=${course.id}`}
+              className="card hover:no-underline hover:shadow-lg transition-all"
+            >
+              <div className="card-body">
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-primary-600 mb-2">
+                      Course #{course.id}
+                    </p>
+                    <h2 className="text-xl font-semibold text-neutral-900">{course.name}</h2>
+                  </div>
+                  <span className="badge badge-primary">Grade {course.grade}</span>
+                </div>
+
+                <p className="text-neutral-600 line-clamp-3">
+                  {course.description || 'No course description provided.'}
+                </p>
+
+                <div className="mt-6 pt-4 border-t border-neutral-200 flex items-center justify-between text-sm">
+                  <span className="text-neutral-500">Open course editor</span>
+                  <span className="text-primary-600 font-medium">Edit</span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

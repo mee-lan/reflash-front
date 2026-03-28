@@ -42,9 +42,6 @@ export default function AdminCreateTeacherPage() {
     <div className="container-custom py-8">
       <div className="mb-8">
         <h1 className="mb-2">Create Teacher Profile</h1>
-        <p className="text-neutral-600">
-          Create a teacher account with the payload expected by `POST /api/admin/teacher-profile`.
-        </p>
       </div>
 
       {error && <div className="alert-error mb-6">{error}</div>}
@@ -106,17 +103,6 @@ export default function AdminCreateTeacherPage() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="card-body">
-            <h2 className="text-2xl font-semibold text-neutral-900 mb-4">Validation</h2>
-            <div className="space-y-3 text-sm text-neutral-600">
-              <p>All fields are required before submission.</p>
-              <p>Username and email are preserved exactly as entered for the backend request.</p>
-              <p>Backend success and validation errors are surfaced inline on the page.</p>
-            </div>
           </div>
         </div>
       </div>
