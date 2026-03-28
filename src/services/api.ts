@@ -13,6 +13,7 @@ import type {
   AdminCourseFormData,
   StudentProfileFormData,
   TeacherProfileFormData,
+  StudentProfileEditData,
 } from '../types'
 import { AUTH_STORAGE_KEY } from '../store/authSlice'
 
@@ -803,6 +804,31 @@ export const aiAPI = {
       answer: card.back || '',
       hint: card.additionalContext || '',
     }))
+  },
+}
+
+export const studentProfileAPI = {
+  getProfile: async (): Promise<StudentProfileEditData> => {
+    try {
+      const { data } = await apiClient.get<ApiResponse<StudentProfileEditData>>('/api/student/profile')
+
+      if (!data.mainBody) {
+        throw new Error('Profile not found')
+      }
+
+      return data.mainBody
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to load student profile'))
+    }
+  },
+
+  updateProfile: async (payload: StudentProfileEditData): Promise<string> => {
+    try {
+      const { data } = await apiClient.put<ApiResponse<null>>('/api/student/profile', payload)
+      return data.message || 'Profile updated successfully'
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to update student profile'))
+    }
   },
 }
 
