@@ -1,6 +1,7 @@
 import axios from 'axios'
 import type {
   ApiResponse,
+  AdminCourseSummary,
   AuthUser,
   Class,
   Deck,
@@ -108,6 +109,14 @@ type BackendAdminCourse = {
   academicYear: string
   teachers: TeacherUser[]
   students: StudentUser[]
+}
+
+type BackendAdminCourseSummary = {
+  couresId?: number
+  courseId?: number
+  courseName: string
+  courseDescription: string
+  grade: string
 }
 
 type BackendTeacherCourseData = {
@@ -359,6 +368,25 @@ export const classAPI = {
 }
 
 export const adminAPI = {
+  getAllCourses: async (): Promise<AdminCourseSummary[]> => {
+    try {
+      const { data } = await apiClient.get<ApiResponse<BackendAdminCourseSummary[]>>('/api/admin/all-course')
+      const courses = Array.isArray(data.mainBody) ? data.mainBody : []
+
+      return courses.map((course) => ({
+        id: course.couresId ?? course.courseId ?? 0,
+        name: course.courseName,
+        description: course.courseDescription,
+        grade: course.grade,
+        academicYear: '',
+        studentCount: 0,
+        teacherCount: 0,
+      }))
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to load courses'))
+    }
+  },
+
   getTeachers: async (): Promise<TeacherUser[]> => {
     const { data } = await apiClient.get<ApiResponse<TeacherUser[]>>('/api/admin/teachers')
     return Array.isArray(data.mainBody) ? data.mainBody : []
