@@ -1,4 +1,5 @@
-import type { FlashCard as Flashcard } from '../types';
+import type { FlashCard as AppFlashCard } from '../types';
+import type { Deck, Flashcard } from '../models/models';
 import seedrandom from 'seedrandom';
 
 export function formatNextDue(timestampSeconds: number): string {
@@ -24,8 +25,10 @@ export function formatNextDue(timestampSeconds: number): string {
 }
 
 class Scheduler {
-  private deckCreatedAt: number;
-  private flashcards: Flashcard[];
+  //initialized by the constructor
+  private deck: Deck;
+  private publicCards = new Map<number, AppFlashCard>();
+  private internalCards = new Map<number, Flashcard>();
 
   //count the number of cards reviewd today
   private reps: number;
@@ -117,12 +120,127 @@ class Scheduler {
   //Determines how often a new card is inserted between review and learning cards
   private newCardModulus = 0;
 
-  constructor(_deckId: number, deckCreatedAtEpoch: number, flashcards: Flashcard[], reps: number = 0) {
-    this.deckCreatedAt = deckCreatedAtEpoch;
-    this.flashcards = flashcards;
-    this.reps = reps;
+  constructor(deck: Deck, reps?: number);
+  constructor(deckId: number, deckCreatedAtEpoch: number, flashcards: AppFlashCard[], reps?: number);
+  constructor(deckOrDeckId: Deck | number, deckCreatedAtEpochOrReps: number = 0, flashcards: AppFlashCard[] = [], reps: number = 0) {
+    if (typeof deckOrDeckId === 'number') {
+      this.deck = this.createDeckAdapter(deckOrDeckId, deckCreatedAtEpochOrReps, flashcards);
+      this.reps = reps;
+    } else {
+      this.deck = deckOrDeckId;
+      this.deck.flashcards = this.deck.flashcards.map((card) => this.cloneFlashcard(card));
+      this.reps = deckCreatedAtEpochOrReps;
+    }
     this.today = this.daysSinceCreation();
     this.reset();
+  }
+
+  private createDeckAdapter(deckId: number, deckCreatedAtEpoch: number, flashcards: AppFlashCard[]): Deck {
+    return {
+      id: deckId,
+      crt: deckCreatedAtEpoch,
+      flashcards: flashcards.map((card) => this.createFlashcardAdapter(card)),
+    };
+  }
+
+  private createFlashcardAdapter(card: AppFlashCard): Flashcard {
+    this.publicCards.set(card.id, card);
+
+    const schedulerCard: Flashcard = {
+      id: card.id,
+      schedulingId: card.schedulingId,
+      deckId: card.deckId,
+      front: card.front,
+      back: card.back,
+      note: { tags: [...(card.tags ?? [])] },
+      tags: [...(card.tags ?? [])],
+      type: card.type,
+      queue: card.queue,
+      ivl: card.ivl,
+      factor: card.factor,
+      reps: card.reps,
+      lapses: card.lapses,
+      left: card.left,
+      due: card.due,
+      dueFormatted: card.dueFormatted,
+      dirty: card.dirty,
+      crtFormatted: card.crtFormatted,
+    };
+
+    this.internalCards.set(card.id, schedulerCard);
+    return schedulerCard;
+  }
+
+  private cloneFlashcard(card: Flashcard): Flashcard {
+    const schedulerCard: Flashcard = {
+      ...card,
+      note: {
+        tags: [...card.note.tags],
+      },
+      tags: [...card.note.tags],
+    };
+
+    this.internalCards.set(card.id, schedulerCard);
+    this.publicCards.set(card.id, this.toPublicFlashcard(schedulerCard));
+
+    return schedulerCard;
+  }
+
+  private toPublicFlashcard(card: Flashcard): AppFlashCard {
+    return {
+      id: card.id,
+      schedulingId: card.schedulingId,
+      deckId: card.deckId,
+      front: card.front,
+      back: card.back,
+      note: this.publicCards.get(card.id)?.note,
+      tags: [...card.note.tags],
+      type: card.type,
+      queue: card.queue,
+      ivl: card.ivl,
+      factor: card.factor,
+      reps: card.reps,
+      lapses: card.lapses,
+      left: card.left,
+      due: card.due,
+      dueFormatted: card.dueFormatted,
+      dirty: card.dirty,
+      crtFormatted: card.crtFormatted,
+    };
+  }
+
+  private syncPublicCard(card: Flashcard): AppFlashCard {
+    const publicCard = this.publicCards.get(card.id) ?? this.toPublicFlashcard(card);
+
+    publicCard.schedulingId = card.schedulingId;
+    publicCard.deckId = card.deckId;
+    publicCard.front = card.front;
+    publicCard.back = card.back;
+    publicCard.tags = [...card.note.tags];
+    publicCard.type = card.type;
+    publicCard.queue = card.queue;
+    publicCard.ivl = card.ivl;
+    publicCard.factor = card.factor;
+    publicCard.reps = card.reps;
+    publicCard.lapses = card.lapses;
+    publicCard.left = card.left;
+    publicCard.due = card.due;
+    publicCard.dueFormatted = card.dueFormatted;
+    publicCard.dirty = card.dirty;
+    publicCard.crtFormatted = card.crtFormatted;
+
+    this.publicCards.set(card.id, publicCard);
+    return publicCard;
+  }
+
+  private getInternalCard(card: AppFlashCard): Flashcard {
+    const internalCard = this.internalCards.get(card.id);
+
+    if (!internalCard) {
+      throw new Error(`Card ${card.id} is not managed by this scheduler`);
+    }
+
+    return internalCard;
   }
 
   /**
@@ -136,7 +254,7 @@ class Scheduler {
    */
   private daysSinceCreation(): number {
     const nowSeconds = Math.floor(Date.now() / 1000); // current epoch seconds
-    const crt = this.deckCreatedAt; // collection creation (epoch s)
+    const crt = this.deck.crt; // collection creation (epoch s)
 
     // 86400 seconds = 1 day
     const daysSinceCreation = Math.floor((nowSeconds - crt) / 86400);
@@ -206,7 +324,7 @@ class Scheduler {
     // Filter: only cards sitting in the NEW queue (queue == 0).
     // Sort:   by due (for the new cards, due date = note.crt, set by the backend)
     // Limit:  take at most `limit` cards.
-    this.newQueue = this.flashcards
+    this.newQueue = this.deck.flashcards
       .filter((card) => card.queue === 'NEW')
       .sort((a, b) => b.due - a.due)
       .slice(0, limit);
@@ -283,7 +401,7 @@ class Scheduler {
     // Limit:  reportLimit.
 
     // NEW FIX: sort by due date
-    this.lrnQueue = this.flashcards
+    this.lrnQueue = this.deck.flashcards
       .filter((card) => card.queue === 'LEARNING' && card.due < cutoff)
       .sort((a, b) => b.due - a.due)
       .slice(0, this.reportLimit);
@@ -321,7 +439,7 @@ class Scheduler {
     // Filter: queue == REVIEW and due day has arrived (due <= today).
     // Sort:   by due (so oldest-due cards are picked first).
     // Limit:  daily cap.
-    this.revQueue = this.flashcards
+    this.revQueue = this.deck.flashcards
       .filter((card) => card.queue === 'REVIEW' && card.due <= this.today)
       .sort((a, b) => a.due - b.due)
       .slice(0, limit);
@@ -354,7 +472,7 @@ class Scheduler {
    * Mirrors Anki's Scheduler.getCard().
    */
   
-  public getUpcomingQueue(): Flashcard[] {
+  public getUpcomingQueue(): AppFlashCard[] {
     // Fill queues if needed
     this.fillNew();
     this.fillLrn(true);
@@ -373,10 +491,10 @@ class Scheduler {
       const dueA = a.queue === 'REVIEW' ? a.due * 86400 : a.due;
       const dueB = b.queue === 'REVIEW' ? b.due * 86400 : b.due;
       return dueA - dueB;
-    });
+    }).map((card) => this.syncPublicCard(card));
   }
 
-  public getCard(): Flashcard | null {
+  public getCard(): AppFlashCard | null {
     if (this.dirtyCards.length > 3) {
       console.log('DEBUG(returning new card): reps' + this.reps);
       console.log(this.dirtyCards);
@@ -386,7 +504,7 @@ class Scheduler {
       // Increment the session counter.  This is used by
       // timeForNewCard() to decide when to interleave a new card.
       this.reps += 1;
-      return card;
+      return this.syncPublicCard(card);
     }
     console.log('DEBUG: session finished, comeback later');
     // No cards left — study session is complete.
@@ -394,15 +512,15 @@ class Scheduler {
   }
 
   public getSessionCardCounts(): { newCount: number; learningCount: number; reviewCount: number; totalLeft: number } {
-    const newCount = this.flashcards.filter((card) => card.queue === 'NEW').length;
+    const newCount = this.deck.flashcards.filter((card) => card.queue === 'NEW').length;
     
     const cutoff = Math.floor(Date.now() / 1000) + Scheduler.COLLAPSE_TIME;
     // Count learning cards that are due within the session window
-    const learningCount = this.flashcards.filter(
+    const learningCount = this.deck.flashcards.filter(
       (card) => card.queue === 'LEARNING' && card.due < cutoff
     ).length;
     
-    const reviewCount = this.flashcards.filter(
+    const reviewCount = this.deck.flashcards.filter(
       (card) => card.queue === 'REVIEW' && card.due <= this.today
     ).length;
     
@@ -419,14 +537,14 @@ class Scheduler {
     const now = Math.floor(Date.now() / 1000);
     const cutoff = now + Scheduler.COLLAPSE_TIME;
 
-    for (const card of this.flashcards) {
+    for (const card of this.deck.flashcards) {
       if (card.queue === 'LEARNING' || card.queue === 'REVIEW') {
           let cardDueTimestamp = 0;
           if (card.queue === 'LEARNING') {
               cardDueTimestamp = card.due;
           } else if (card.queue === 'REVIEW') {
               // card.due is days since creation
-              cardDueTimestamp = this.deckCreatedAt + card.due * 86400;
+              cardDueTimestamp = this.deck.crt + card.due * 86400;
           }
 
           if (cardDueTimestamp > cutoff) {
@@ -586,7 +704,9 @@ class Scheduler {
    * @throws Error if ease is not in [1, 4] or the card's queue is unexpected.
    */
   // NOTE: this should be implemented in the frontend and then update time should be sent to the backend
-  public answerCard(card: Flashcard, ease: number): void {
+  public answerCard(card: AppFlashCard, ease: number): void {
+    const internalCard = this.getInternalCard(card);
+
     // Validate inputs — same assertions as Anki:
     //   assert 1 <= ease <= 4
     if (ease < 1 || ease > 4) {
@@ -594,29 +714,30 @@ class Scheduler {
     }
 
     // Increment the card's total review count.
-    card.reps = card.reps + 1;
+    internalCard.reps = internalCard.reps + 1;
 
     // Dispatch based on the card's current queue.
-    switch (card.queue) {
+    switch (internalCard.queue) {
       case 'NEW':
         // Brand-new card being seen for the first time.
-        this.answerNewCard(card, ease);
+        this.answerNewCard(internalCard, ease);
         break;
 
       case 'LEARNING':
         // Card is in the learning (or relearning) queue.
-        this.answerLrnCard(card, ease);
+        this.answerLrnCard(internalCard, ease);
         break;
 
       case 'REVIEW':
         // Card is in the review queue.
-        this.answerRevCard(card, ease);
+        this.answerRevCard(internalCard, ease);
         break;
 
       default:
-        throw new Error(`Unexpected card queue: ${card.queue}`);
+        throw new Error(`Unexpected card queue: ${internalCard.queue}`);
     }
-    this.markCardDirty(card);
+    this.markCardDirty(internalCard);
+    this.syncPublicCard(internalCard);
   }
 
   // =====================================================================
@@ -1135,8 +1256,8 @@ class Scheduler {
   private checkLeech(card: Flashcard): boolean {
     if (card.lapses >= Scheduler.LEECH_FAILS) {
       // Tag the note so the user can easily find leeches.
-      if (!card.tags?.includes('leech')) {
-        (card.tags = card.tags || []).push('leech');
+      if (!card.note.tags.includes('leech')) {
+        card.note.tags.push('leech');
       }
       // Suspend the card — it will no longer appear in any queue.
       card.queue = 'SUSPENDED';
@@ -1363,17 +1484,18 @@ class Scheduler {
 
   //get the button values
   //TODO: here, the ' minutes' ' days' are hardcoded, look to simplify the logic
-  getButtonValues(card: Flashcard): {
+  getButtonValues(card: AppFlashCard): {
     easy: string;
     good: string;
     hard: string;
     again: string;
   } {
+    const internalCard = this.getInternalCard(card);
     let hardStep = '' ;
     let goodStep = '' ;
     let easyStep = '' ;
     let againStep = '';
-    switch (card.type) {
+    switch (internalCard.type) {
       case 'NEW':
         easyStep = '4 day';
         goodStep = '10 minutes';
@@ -1382,52 +1504,52 @@ class Scheduler {
         break;
 
       case 'LEARNING':
-        againStep = this.lrnConf(card)[0] + ' minutes';
+        againStep = this.lrnConf(internalCard)[0] + ' minutes';
         easyStep = '4 days'; //easy step is always 4
 
         //NOTE: cards start at conf.length and the last step is '1'
-        if (card.left == 1) {
+        if (internalCard.left == 1) {
           //since this is the last step left, the next step will be graduation
-          const currentStep = this.delayForGrade(this.lrnConf(card), card.left);
+          const currentStep = this.delayForGrade(this.lrnConf(internalCard), internalCard.left);
           //there is no next step
           const nextStep = currentStep;
 
           //since this is the last step
           goodStep = Scheduler.GRADUATING_IVL + ' days';
           hardStep = Math.floor((currentStep + Math.max(currentStep, nextStep)) / 2)/60 + ' minutes';
-          againStep = this.lrnConf(card)[0]+ ' minute';
+          againStep = this.lrnConf(internalCard)[0]+ ' minute';
           easyStep = '4 days'
 
-        } else if (card.left == 2) {
-          const currentStep = this.delayForGrade(this.lrnConf(card), card.left);
-          const nextStep = this.delayForGrade(this.lrnConf(card), card.left - 1);
+        } else if (internalCard.left == 2) {
+          const currentStep = this.delayForGrade(this.lrnConf(internalCard), internalCard.left);
+          const nextStep = this.delayForGrade(this.lrnConf(internalCard), internalCard.left - 1);
 
           goodStep = nextStep/60 + ' minutes';
           hardStep = Math.ceil((currentStep + Math.max(currentStep, nextStep)) / 2/60) + ' minutes';
-          againStep = this.lrnConf(card)[0] + ' minute';
+          againStep = this.lrnConf(internalCard)[0] + ' minute';
           easyStep = '4 days'
         }
         break;
 
       case 'RELEARNING':
-        againStep = this.lrnConf(card)[0] + ' minutes';
+        againStep = this.lrnConf(internalCard)[0] + ' minutes';
         hardStep = '15 minutes'; //NOTE: a hard-coded value for hard step in relearning cards(hard coded in delayForRepeatingGrade, read the NOTE in the method)
-        goodStep = card.ivl + ' day';
+        goodStep = internalCard.ivl + ' day';
 
         //NOTE: a hardcoded value for easy step in relearing cards(hardcoded in rescheduleAsRev, read the NOTE there)
         easyStep = '2 days';
         break;
 
       case 'REVIEW':
-        hardStep = this.nextRevIvl(card, 2) + ' days';
-        goodStep = this.nextRevIvl(card, 3) + ' days';
-        easyStep = this.nextRevIvl(card, 4) + ' days';
-        againStep = this.lrnConf(card)[0] + ' minutes';
+        hardStep = this.nextRevIvl(internalCard, 2) + ' days';
+        goodStep = this.nextRevIvl(internalCard, 3) + ' days';
+        easyStep = this.nextRevIvl(internalCard, 4) + ' days';
+        againStep = this.lrnConf(internalCard)[0] + ' minutes';
 
         break;
 
       default:
-        throw new Error(`Unexpected card queue: ${card.queue}`);
+        throw new Error(`Unexpected card queue: ${internalCard.queue}`);
     }
 
     return {
