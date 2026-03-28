@@ -353,6 +353,29 @@ class Scheduler {
    *
    * Mirrors Anki's Scheduler.getCard().
    */
+  
+  public getUpcomingQueue(): Flashcard[] {
+    // Fill queues if needed
+    this.fillNew();
+    this.fillLrn(true);
+    this.fillRev();
+
+    // Collect all cards currently in queues
+    const queue = [
+      ...this.lrnQueue,
+      ...this.revQueue,
+      ...this.newQueue
+    ];
+
+    // Sort by due (ascending) - learning cards have timestamps, review cards have days, new cards have timestamps
+    // We normalize them for sorting: if it's a review card, it's due today or earlier, so we can treat its due as "now" or "past"
+    return queue.sort((a, b) => {
+      const dueA = a.queue === 'REVIEW' ? a.due * 86400 : a.due;
+      const dueB = b.queue === 'REVIEW' ? b.due * 86400 : b.due;
+      return dueA - dueB;
+    });
+  }
+
   public getCard(): Flashcard | null {
     if (this.dirtyCards.length > 3) {
       console.log('DEBUG(returning new card): reps' + this.reps);

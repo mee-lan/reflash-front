@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { classAPI, flashcardAPI } from '../../services/api';
-import type { Class, Deck, FlashCard } from '../../types';
+import type { Class, Deck } from '../../types';
 
 export default function TeacherQuizGeneration() {
     const navigate = useNavigate();

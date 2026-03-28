@@ -6,9 +6,20 @@ import MarkdownViewer from './MarkdownViewer'
 interface FlashCardProps {
     card: FlashCardType
     onRate: (ease: 1 | 2 | 3 | 4) => void
+    buttonValues?: {
+        easy: string;
+        good: string;
+        hard: string;
+        again: string;
+    }
 }
 
-export default function FlashCard({ card, onRate }: FlashCardProps) {
+const formatTime = (timeStr?: string) => {
+    if (!timeStr) return '';
+    return timeStr.replace(/minutes?/g, 'min').replace(/days?/g, 'day');
+}
+
+export default function FlashCard({ card, onRate, buttonValues }: FlashCardProps) {
     const [isFlipped, setIsFlipped] = useState(false)
     const [cardSize, setCardSize] = useState({ width: 1000, height: 500 })
     const frontContentAreaRef = useRef<HTMLDivElement | null>(null)
@@ -209,34 +220,38 @@ export default function FlashCard({ card, onRate }: FlashCardProps) {
                             <div className="grid grid-cols-4 gap-3">
                                 <button
                                     onClick={() => { onRate(1); setIsFlipped(false) }}
-                                    className="flex flex-col items-center gap-2 rounded-lg border-2 border-red-200 bg-red-50 p-4 transition-colors hover:bg-red-100"
+                                    className="flex flex-col items-center gap-1 rounded-lg border-2 border-red-200 bg-red-50 p-4 transition-colors hover:bg-red-100"
                                 >
-                                    <span className="text-2xl">😰</span>
+                                    <span className="text-2xl mb-1">😰</span>
                                     <span className="text-sm font-medium text-red-900">Again</span>
+                                    {buttonValues?.again && <span className="text-xs text-red-700/70 font-medium">{formatTime(buttonValues.again)}</span>}
                                 </button>
 
                                 <button
                                     onClick={() => { onRate(2); setIsFlipped(false) }}
-                                    className="flex flex-col items-center gap-2 rounded-lg border-2 border-orange-200 bg-orange-50 p-4 transition-colors hover:bg-orange-100"
+                                    className="flex flex-col items-center gap-1 rounded-lg border-2 border-orange-200 bg-orange-50 p-4 transition-colors hover:bg-orange-100"
                                 >
-                                    <span className="text-2xl">😓</span>
+                                    <span className="text-2xl mb-1">😓</span>
                                     <span className="text-sm font-medium text-orange-900">Hard</span>
+                                    {buttonValues?.hard && <span className="text-xs text-orange-700/70 font-medium">{formatTime(buttonValues.hard)}</span>}
                                 </button>
 
                                 <button
                                     onClick={() => { onRate(3); setIsFlipped(false) }}
-                                    className="flex flex-col items-center gap-2 rounded-lg border-2 border-yellow-200 bg-yellow-50 p-4 transition-colors hover:bg-yellow-100"
+                                    className="flex flex-col items-center gap-1 rounded-lg border-2 border-yellow-200 bg-yellow-50 p-4 transition-colors hover:bg-yellow-100"
                                 >
-                                    <span className="text-2xl">🤔</span>
+                                    <span className="text-2xl mb-1">🤔</span>
                                     <span className="text-sm font-medium text-yellow-900">Good</span>
+                                    {buttonValues?.good && <span className="text-xs text-yellow-700/70 font-medium">{formatTime(buttonValues.good)}</span>}
                                 </button>
 
                                 <button
                                     onClick={() => { onRate(4); setIsFlipped(false) }}
-                                    className="flex flex-col items-center gap-2 rounded-lg border-2 border-green-200 bg-green-50 p-4 transition-colors hover:bg-green-100"
+                                    className="flex flex-col items-center gap-1 rounded-lg border-2 border-green-200 bg-green-50 p-4 transition-colors hover:bg-green-100"
                                 >
-                                    <span className="text-2xl">😎</span>
+                                    <span className="text-2xl mb-1">😎</span>
                                     <span className="text-sm font-medium text-green-900">Easy</span>
+                                    {buttonValues?.easy && <span className="text-xs text-green-700/70 font-medium">{formatTime(buttonValues.easy)}</span>}
                                 </button>
                             </div>
                         </div>
