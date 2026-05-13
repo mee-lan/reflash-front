@@ -252,17 +252,17 @@ export default function TeacherDeckView() {
         }
 
         try {
-            const createdCards = await Promise.all(
-                aiDraftCards.map((draft) =>
-                    prepareCardContentForSave({
-                        front: draft.question,
-                        back: draft.answer,
-                        note: draft.hint,
-                    }).then((preparedCardData) => flashcardAPI.createCard(Number(deckId), preparedCardData))
-                )
-            )
+            for (const draft of aiDraftCards) {
+                const preparedCardData = await prepareCardContentForSave({
+                    front: draft.question,
+                    back: draft.answer,
+                    note: draft.hint,
+                })
+                await flashcardAPI.createCard(Number(deckId), preparedCardData)
+            }
 
-            setCards((currentCards) => [...currentCards, ...createdCards])
+            const refreshedCards = await flashcardAPI.getDeckCards(Number(deckId), true)
+            setCards(refreshedCards)
             setAIDraftCards([])
         } catch (error) {
             console.error('Failed to confirm all AI generated cards:', error)
