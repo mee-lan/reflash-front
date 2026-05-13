@@ -221,7 +221,7 @@ export default function DeckStudy() {
                                     <p className="text-[10px] uppercase font-semibold text-neutral-500 tracking-wider">Learn</p>
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-sm font-bold text-emerald-600">{sessionCounts.reviewCount}</p>
+                                    <p className="text-sm font-bold text-emerald-600">{Number(sessionCounts.newCount) + Number(sessionCounts.learningCount)}</p>
                                     <p className="text-[10px] uppercase font-semibold text-neutral-500 tracking-wider">Due</p>
                                 </div>
                             </div>
