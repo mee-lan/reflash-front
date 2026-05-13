@@ -14,6 +14,8 @@ interface FlashCardProps {
     }
 }
 
+const DEFAULT_CARD_SIZE = { width: 1000, height: 500 }
+
 const formatTime = (timeStr?: string) => {
     if (!timeStr) return '';
     return timeStr.replace(/minutes?/g, 'min').replace(/days?/g, 'day');
@@ -21,7 +23,7 @@ const formatTime = (timeStr?: string) => {
 
 export default function FlashCard({ card, onRate, buttonValues }: FlashCardProps) {
     const [isFlipped, setIsFlipped] = useState(false)
-    const [cardSize, setCardSize] = useState({ width: 1000, height: 500 })
+    const [cardSize, setCardSize] = useState(DEFAULT_CARD_SIZE)
     const frontContentAreaRef = useRef<HTMLDivElement | null>(null)
     const backContentAreaRef = useRef<HTMLDivElement | null>(null)
     const frontContentInnerRef = useRef<HTMLDivElement | null>(null)
@@ -37,10 +39,7 @@ export default function FlashCard({ card, onRate, buttonValues }: FlashCardProps
     }, [card.id])
 
     useEffect(() => {
-        setCardSize((current) => ({
-            width: Math.max(current.width, 1000),
-            height: Math.max(current.height, 500),
-        }))
+        setCardSize(DEFAULT_CARD_SIZE)
     }, [card.id])
 
     useEffect(() => {
@@ -99,8 +98,8 @@ export default function FlashCard({ card, onRate, buttonValues }: FlashCardProps
             }
 
             setCardSize((current) => ({
-                width: Math.max(1000, current.width + overflowWidth),
-                height: Math.max(500, current.height + overflowHeight + footerReserveHeight),
+                width: Math.max(DEFAULT_CARD_SIZE.width, current.width + overflowWidth),
+                height: Math.max(DEFAULT_CARD_SIZE.height, current.height + overflowHeight + footerReserveHeight),
             }))
         }
 
@@ -128,7 +127,7 @@ export default function FlashCard({ card, onRate, buttonValues }: FlashCardProps
                     <ResizableBox
                         width={cardSize.width}
                         height={cardSize.height}
-                        minConstraints={[1000, 500]}
+                        minConstraints={[DEFAULT_CARD_SIZE.width, DEFAULT_CARD_SIZE.height]}
                         maxConstraints={[1800, 2200]}
                         resizeHandles={['se']}
                         onResizeStop={(_event, data) => {

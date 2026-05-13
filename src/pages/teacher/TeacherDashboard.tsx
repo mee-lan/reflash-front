@@ -65,8 +65,8 @@ export default function TeacherDashboard() {
 
     const filteredClasses = useMemo(() => {
         if (!searchQuery) return classes;
-        return classes.filter(c => 
-            c.name.toLowerCase().includes(searchQuery) || 
+        return classes.filter(c =>
+            c.name.toLowerCase().includes(searchQuery) ||
             c.subject.toLowerCase().includes(searchQuery) ||
             (c.description && c.description.toLowerCase().includes(searchQuery))
         );
